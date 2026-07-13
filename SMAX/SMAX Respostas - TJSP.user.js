@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.0
+// @version      1.1
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.0';
+  const SMAX_TOOLKIT_VERSION = '1.1';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -4147,7 +4147,7 @@
 
     const renderSectionEspecialistas = () => {
       const allWorkers = [];
-      currentTeams.forEach(t => (t.workers || []).forEach(w => allWorkers.push({ ...w, teamName: t.name || t.id })));
+      TeamsConfig.getTeams().forEach(t => (t.workers || []).forEach(w => allWorkers.push({ ...w, teamName: t.name || t.id })));
       if (!allWorkers.length) return `<div class="smax-sp-card"><div class="smax-sp-muted" style="text-align:center;padding:20px;">Nenhum especialista cadastrado nas equipes.</div></div>`;
       return `
         <div class="smax-sp-card">
