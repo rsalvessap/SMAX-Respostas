@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.1
+// @version      1.2
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.1';
+  const SMAX_TOOLKIT_VERSION = '1.2';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -3474,7 +3474,7 @@
                 <strong style="font-size:13px;color:var(--sp-text);">${Utils.escapeHtml(t.name || t.id || 'Sem nome')}</strong>
                 ${isDefault ? '<span style="font-size:10px;background:var(--sp-primary-bg);color:var(--sp-accent);padding:2px 6px;border-radius:999px;margin-left:6px;border:1px solid var(--sp-accent);">Padrão</span>' : ''}
                 ${isShared ? '<span style="font-size:10px;background:var(--sp-pending-bg);color:var(--sp-pending);padding:2px 6px;border-radius:999px;margin-left:6px;border:1px solid var(--sp-pending);" title="Carregada do Config. Compartilhada — somente leitura">☁️ Compartilhada</span>' : ''}
-                <div class="smax-team-prio-info" style="font-size:11px;color:var(--sp-text-muted);margin-top:2px;">Prioridade: ${t.priority || 0} • Membros: ${t.workers ? t.workers.length : 0}</div>
+                <div class="smax-team-prio-info" style="font-size:11px;color:var(--sp-text-muted);margin-top:2px;">Membros: ${t.workers ? t.workers.length : 0}</div>
               </div>
               <div style="display:flex;gap:6px;">
                 ${!isShared ? `<button class="smax-team-edit-btn" data-id="${t.id}" style="font-size:11px;padding:6px 12px;cursor:pointer;background:var(--sp-surface);color:var(--sp-text);border:1px solid var(--sp-border);border-radius:6px;transition:all .15s ease;">Editar</button>` : ''}
@@ -3548,12 +3548,6 @@
             <div>
               <label style="display:block;font-size:12px;font-weight:600;color:var(--sp-text-muted);margin-bottom:4px;">Qual o nome da equipe?</label>
               <input type="text" id="smax-edit-id" value="${Utils.escapeHtml(team.name || team.id || '')}" ${isGeneralTeam ? 'disabled' : ''} placeholder="Ex: JEC, Cível, Criminal..." style="width:100%;padding:8px 12px;border:1px solid var(--sp-border);border-radius:8px;background:var(--sp-input-bg);color:var(--sp-text);font-size:13px;box-sizing:border-box;${isGeneralTeam ? 'opacity:.6;cursor:not-allowed;' : ''}">
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--sp-text-muted);margin-bottom:2px;">Prioridade
-                <span title="Define a ordem de verificação na triagem automática. A equipe com maior prioridade é verificada primeiro. Use valores altos (ex: 10) para equipes específicas e baixos (ex: 1) para a equipe geral (fallback). Assim, chamados de um GSE específico vão para a equipe certa antes de cair no grupo geral." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
-              </label>
-              <input type="number" id="smax-edit-prio" value="${team.priority || 0}" style="width:100%;padding:8px 12px;border:1px solid var(--sp-border);border-radius:8px;background:var(--sp-input-bg);color:var(--sp-text);font-size:13px;box-sizing:border-box;">
             </div>
           </div>
 
@@ -3667,9 +3661,8 @@
         const saveBtn = container.querySelector('#smax-save-team-btn');
         if (saveBtn) saveBtn.addEventListener('click', () => {
           const idInput = container.querySelector('#smax-edit-id');
-          const prioInput = container.querySelector('#smax-edit-prio');
           const newId = idInput.value.trim();
-          const newPrio = parseInt(prioInput.value, 10) || 0;
+          const newPrio = 0;
 
           if (!newId) return alert('O ID da equipe é obrigatório.');
           if (editingTeamId === '__NEW__' && currentTeams.some(t => t.id === newId)) return alert('Já existe uma equipe com este ID.');
