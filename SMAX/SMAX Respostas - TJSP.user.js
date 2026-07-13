@@ -4689,44 +4689,11 @@
               <div style="font-size:13px;font-weight:600;color:var(--sp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escapeHtml(t.title)}</div>
               <div style="font-size:11px;color:var(--sp-text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escapeHtml((t.html||'').replace(/<[^>]+>/g,' ').trim().slice(0,80))}</div>
             </div>
-            <button class="smax-tpl-sp-use" data-idx="${i}" title="Inserir no editor" style="flex-shrink:0;padding:4px 10px;border-radius:5px;border:none;background:var(--sp-primary-bg);color:var(--sp-primary);font-size:11px;font-weight:600;cursor:pointer;">Usar</button>
             <button class="smax-tpl-sp-edit-btn" data-idx="${i}" title="Editar" style="flex-shrink:0;padding:4px 8px;border-radius:5px;border:1px solid var(--sp-border);background:none;color:var(--sp-text-muted);font-size:11px;cursor:pointer;">✏️</button>
             <button class="smax-tpl-sp-del-btn" data-idx="${i}" title="Excluir" style="flex-shrink:0;padding:4px 8px;border-radius:5px;border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);color:var(--sp-danger-text);font-size:11px;cursor:pointer;">✕</button>
           </div>
         `).join('');
 
-        listEl.querySelectorAll('.smax-tpl-sp-use').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const idx = parseInt(btn.dataset.idx, 10);
-            const tpl = Templates.load(tplActiveDisc)[idx];
-            if (!tpl) return;
-
-            // Fechar painel primeiro para que o CKEditor possa receber foco
-            container.style.display = 'none';
-            const bd = document.getElementById('smax-settings-backdrop');
-            if (bd) bd.style.display = 'none';
-
-            // pushSolutionHtml: abre o editor se necessário e insere com retry
-            const ok = await Utils.pushSolutionHtml(tpl.html);
-            if (!ok) {
-              // Fallback: insere no último editor ativo sem foco
-              const ck = (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window)?.CKEDITOR;
-              if (ck) {
-                const instances = Object.values(ck.instances || {});
-                const last = instances[instances.length - 1];
-                if (last) { last.insertHtml(tpl.html); return; }
-              }
-              // Último recurso: copiar para clipboard
-              navigator.clipboard?.writeText(tpl.html).catch(() => {});
-              const toast = document.createElement('div');
-              toast.textContent = '📋 Template copiado — cole no campo de resposta (Ctrl+V)';
-              toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sp-surface);color:var(--sp-text);padding:11px 22px;border-radius:10px;font-size:13px;z-index:9999999;box-shadow:0 4px 18px rgba(0,0,0,.5);border:1px solid var(--sp-border);';
-              document.body.appendChild(toast);
-              setTimeout(() => toast.remove(), 3500);
-            }
-          });
-        });
         listEl.querySelectorAll('.smax-tpl-sp-edit-btn').forEach(btn => {
           btn.addEventListener('click', (e) => { e.stopPropagation(); openTplForm(parseInt(btn.dataset.idx, 10)); });
         });
