@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.3
+// @version      1.4
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.3';
+  const SMAX_TOOLKIT_VERSION = '1.4';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -4555,72 +4555,48 @@
       const detResults  = container.querySelector('#smax-det-search-results');
       if (detSearch && detResults) {
         let detSearchTimeout = null;
-        // Cache local de TODAS as pessoas (sem filtro de grupo) — carregado 1x sob demanda
-        let allPeopleCache = null;
-        let allPeopleLoading = null;
-        const ensureAllPeople = () => {
-          if (allPeopleCache) return Promise.resolve(allPeopleCache);
-          if (allPeopleLoading) return allPeopleLoading;
-          allPeopleLoading = (async () => {
-            const map = new Map();
-            let skip = 0;
-            const pageSize = 200;
-            let total = Infinity;
-            while (skip < total) {
-              try {
-                const data = await ApiClient.request('ems/Person', {
-                  method: 'GET',
-                  searchParams: { layout: 'Id,Name,Upn,Email', size: String(pageSize), skip: String(skip), order: 'Name asc', meta: 'totalCount' },
-                  includeTenantParam: true,
-                });
-                const entities = data?.entities || [];
-                if (data?.meta?.total_count != null) total = data.meta.total_count;
-                else if (!entities.length) break;
-                for (const ent of entities) {
-                  if (!ent || typeof ent !== 'object') continue;
-                  const props = ent.properties || {};
-                  const id = props.Id != null ? String(props.Id) : '';
-                  if (!id) continue;
-                  const name = (props.Name || '').toString().trim();
-                  if (!name) continue;
-                  map.set(id, { id, name, upn: (props.Upn || '').toString().trim() });
-                }
-                skip += pageSize;
-                if (entities.length < pageSize) break;
-              } catch (err) {
-                console.warn('[SMAX] Destaque allPeople page error:', err);
-                break;
-              }
-            }
-            allPeopleCache = map;
-            console.log('[SMAX] Destaque allPeopleCache loaded:', map.size);
-            return map;
-          })();
-          allPeopleLoading.finally(() => { allPeopleLoading = null; });
-          return allPeopleLoading;
+        let detAbortController = null;
+
+        const searchPeopleApi = async (term) => {
+          if (detAbortController) detAbortController.abort();
+          detAbortController = new AbortController();
+          const escaped = term.replace(/'/g, "''");
+          const data = await ApiClient.request('ems/Person', {
+            method: 'GET',
+            searchParams: {
+              layout: 'Id,Name,Upn,Email',
+              filter: `Name like '%${escaped}%'`,
+              size: '15',
+              order: 'Name asc',
+            },
+            includeTenantParam: true,
+            timeout: 10000,
+          });
+          const results = [];
+          for (const ent of (data?.entities || [])) {
+            if (!ent || typeof ent !== 'object') continue;
+            const props = ent.properties || {};
+            const id = props.Id != null ? String(props.Id) : '';
+            if (!id) continue;
+            const name = (props.Name || '').toString().trim();
+            if (!name) continue;
+            results.push({ id, name, upn: (props.Upn || '').toString().trim() });
+          }
+          return results;
         };
-        // Botão "Adicionar" — mostra input e inicia pré-carregamento
+
         if (detAddBtn) detAddBtn.addEventListener('click', () => {
           detInputRow.style.display = 'block';
           detSearch?.focus();
-          ensureAllPeople();
         });
-        const renderSearchResults = () => {
-          const q = (detSearch.value || '').trim().toLowerCase();
-          if (!q || q.length < 2) { detResults.style.display = 'none'; return; }
-          if (!allPeopleCache) {
-            detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Carregando lista de pessoas...</div>';
-            detResults.style.display = 'block';
-            return;
-          }
+
+        const renderSearchResults = (matches) => {
           const existingIds = new Set((personal.myDestaque || []).map(d => d.id).filter(Boolean));
-          const matches = [...allPeopleCache.values()]
-            .filter(p => !existingIds.has(p.id) && ((p.name || '').toLowerCase().includes(q) || (p.upn || '').toLowerCase().includes(q)))
-            .slice(0, 12);
-          if (!matches.length) {
+          const filtered = matches.filter(p => !existingIds.has(p.id));
+          if (!filtered.length) {
             detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Nenhuma pessoa encontrada.</div>';
           } else {
-            detResults.innerHTML = matches.map(p => `
+            detResults.innerHTML = filtered.map(p => `
               <div class="smax-det-result" data-id="${Utils.escapeHtml(p.id)}" data-name="${Utils.escapeHtml(p.name)}"
                 style="padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--sp-border);color:var(--sp-text);transition:background .1s;">
                 ${Utils.escapeHtml(p.name)}${p.upn ? ` <span style="font-size:10px;color:var(--sp-text-dim);">(${Utils.escapeHtml(p.upn)})</span>` : ''}
@@ -4638,16 +4614,22 @@
           }
           detResults.style.display = 'block';
         };
+
         detSearch.addEventListener('input', () => {
           clearTimeout(detSearchTimeout);
+          const q = (detSearch.value || '').trim();
+          if (q.length < 2) { detResults.style.display = 'none'; return; }
+          detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Buscando...</div>';
+          detResults.style.display = 'block';
           detSearchTimeout = setTimeout(() => {
-            if (!allPeopleCache) {
-              renderSearchResults(); // mostra "Carregando..."
-              ensureAllPeople().then(renderSearchResults);
-            } else {
-              renderSearchResults();
-            }
-          }, 200);
+            searchPeopleApi(q)
+              .then(renderSearchResults)
+              .catch(err => {
+                if (err.name === 'AbortError') return;
+                console.warn('[SMAX] Destaque search error:', err);
+                detResults.innerHTML = '<div style="padding:8px;color:var(--sp-danger);font-size:11px;">Erro na busca.</div>';
+              });
+          }, 350);
         });
         detSearch.addEventListener('blur', () => setTimeout(() => { detResults.style.display = 'none'; }, 250));
       }
