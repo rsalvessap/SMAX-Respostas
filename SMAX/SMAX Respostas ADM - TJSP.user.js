@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.6
+// @version      1.8
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.6';
+  const SMAX_TOOLKIT_VERSION = '1.8';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -4162,7 +4162,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
             <div class="smax-sp-section-title" style="margin-bottom:2px;">⭐ Usuários Destaque</div>
-            <div class="smax-sp-muted">Lista pessoal — não compartilhada com a equipe. A linha inteira do chamado é destacada na fila.</div>
+            <div class="smax-sp-muted">Solicitantes marcados recebem badge ⭐ na lista e no detalhe do chamado. Busca entre agentes e solicitantes dos chamados carregados.</div>
           </div>
           <button type="button" id="smax-det-add-btn" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--sp-border);background:var(--sp-surface-2);color:var(--sp-text);cursor:pointer;">+ Adicionar</button>
         </div>
@@ -4547,54 +4547,6 @@
       });
     };
 
-    // Cache global de todas as pessoas (carregado 1x em background, sem filtro de grupo)
-    let _allPeopleCache = null;
-    let _allPeoplePromise = null;
-    const loadAllPeople = () => {
-      if (_allPeopleCache) return Promise.resolve(_allPeopleCache);
-      if (_allPeoplePromise) return _allPeoplePromise;
-      _allPeoplePromise = (async () => {
-        const map = new Map();
-        let skip = 0;
-        const pageSize = 250;
-        let total = Infinity;
-        while (skip < total) {
-          try {
-            const data = await ApiClient.request('ems/Person', {
-              method: 'GET',
-              searchParams: { layout: 'Id,Name,Upn,Email', size: String(pageSize), skip: String(skip), order: 'Name asc', meta: 'totalCount' },
-              includeTenantParam: true,
-              timeout: 15000,
-            });
-            const entities = data?.entities || [];
-            if (data?.meta?.total_count != null) total = data.meta.total_count;
-            else if (!entities.length) break;
-            for (const ent of entities) {
-              if (!ent || typeof ent !== 'object') continue;
-              const props = ent.properties || {};
-              const id = props.Id != null ? String(props.Id) : '';
-              if (!id) continue;
-              const name = (props.Name || '').toString().trim();
-              if (!name) continue;
-              map.set(id, { id, name, upn: (props.Upn || '').toString().trim() });
-            }
-            skip += pageSize;
-            if (entities.length < pageSize) break;
-          } catch (err) {
-            console.warn('[SMAX] Destaque loadAllPeople page error:', err);
-            break;
-          }
-        }
-        if (map.size > 0) {
-          _allPeopleCache = map;
-          console.log('[SMAX] Destaque allPeopleCache loaded:', map.size);
-        }
-        return _allPeopleCache;
-      })();
-      _allPeoplePromise.finally(() => { _allPeoplePromise = null; });
-      return _allPeoplePromise;
-    };
-
     const wireDestaqueEvents = () => {
       if (!container) return;
       const detAddBtn   = container.querySelector('#smax-det-add-btn');
@@ -4603,44 +4555,67 @@
       const detResults  = container.querySelector('#smax-det-search-results');
       if (detSearch && detResults) {
         let detSearchTimeout = null;
+        let detSearchSeq = 0; // para ignorar respostas de buscas antigas
 
-        const collectSearchablePeople = () => {
-          // Se o cache global está disponível, usar ele (mais completo)
-          if (_allPeopleCache) return _allPeopleCache;
-          // Fallback: mescla peopleCache + solicitantes do triageCache
-          const merged = new Map();
+        // Busca por prefixo na API usando operadores >= / <
+        const searchPeopleByPrefix = async (term) => {
+          const escaped = term.replace(/'/g, "''");
+          const lastChar = escaped.charAt(escaped.length - 1);
+          const upperBound = escaped.slice(0, -1) + String.fromCharCode(lastChar.charCodeAt(0) + 1);
+          const data = await ApiClient.request('ems/Person', {
+            method: 'GET',
+            searchParams: {
+              layout: 'Id,Name,Upn,Email',
+              filter: `Name >= '${escaped}' and Name < '${upperBound}'`,
+              size: '20',
+              order: 'Name asc',
+            },
+            includeTenantParam: true,
+            timeout: 10000,
+          });
+          const results = [];
+          for (const ent of (data?.entities || [])) {
+            if (!ent || typeof ent !== 'object') continue;
+            const props = ent.properties || {};
+            const id = props.Id != null ? String(props.Id) : '';
+            if (!id) continue;
+            const name = (props.Name || '').toString().trim();
+            if (!name) continue;
+            results.push({ id, name, upn: (props.Upn || '').toString().trim() });
+          }
+          return results;
+        };
+
+        // Busca local nos caches (substring)
+        const searchLocal = (q) => {
+          const results = [];
+          const seen = new Set();
+          const add = (id, name, upn) => {
+            if (seen.has(id)) return;
+            seen.add(id);
+            results.push({ id, name, upn });
+          };
           for (const [id, p] of DataRepository.peopleCache) {
-            merged.set(id, { id, name: p.name || '', upn: p.upn || '' });
+            if ((p.name || '').toLowerCase().includes(q) || (p.upn || '').toLowerCase().includes(q)) {
+              add(id, p.name || '', p.upn || '');
+            }
           }
           for (const [, entry] of DataRepository.triageCache) {
             const pid = entry.requestedForPersonId;
-            if (pid && !merged.has(pid) && entry.requestedForName) {
-              merged.set(pid, { id: pid, name: entry.requestedForName, upn: '' });
+            if (pid && (entry.requestedForName || '').toLowerCase().includes(q)) {
+              add(pid, entry.requestedForName, '');
             }
           }
-          return merged;
+          return results;
         };
 
-        if (detAddBtn) detAddBtn.addEventListener('click', () => {
-          detInputRow.style.display = 'block';
-          detSearch?.focus();
-          DataRepository.ensurePeopleLoaded();
-          loadAllPeople(); // inicia carregamento em background
-        });
-
-        const renderSearchResults = () => {
-          const q = (detSearch.value || '').trim().toLowerCase();
-          if (!q || q.length < 2) { detResults.style.display = 'none'; return; }
-          const allPeople = collectSearchablePeople();
+        const renderResults = (matches) => {
           const existingIds = new Set((personal.myDestaque || []).map(d => d.id).filter(Boolean));
-          const matches = [...allPeople.values()]
-            .filter(p => !existingIds.has(p.id) && ((p.name || '').toLowerCase().includes(q) || (p.upn || '').toLowerCase().includes(q)))
-            .slice(0, 15);
-          const loadingNote = !_allPeopleCache ? '<div style="padding:4px 10px;font-size:10px;color:var(--sp-text-dim);border-bottom:1px solid var(--sp-border);">⏳ Carregando lista completa...</div>' : '';
-          if (!matches.length) {
-            detResults.innerHTML = loadingNote + '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Nenhuma pessoa encontrada.</div>';
+          const filtered = matches.filter(p => !existingIds.has(p.id));
+          if (!filtered.length) {
+            detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Nenhuma pessoa encontrada.</div>';
           } else {
-            detResults.innerHTML = loadingNote + matches.map(p => `
+            detResults.innerHTML = filtered.slice(0, 15).map(p => `
               <div class="smax-det-result" data-id="${Utils.escapeHtml(p.id)}" data-name="${Utils.escapeHtml(p.name)}"
                 style="padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--sp-border);color:var(--sp-text);transition:background .1s;">
                 ${Utils.escapeHtml(p.name)}${p.upn ? ` <span style="font-size:10px;color:var(--sp-text-dim);">(${Utils.escapeHtml(p.upn)})</span>` : ''}
@@ -4659,17 +4634,47 @@
           detResults.style.display = 'block';
         };
 
+        if (detAddBtn) detAddBtn.addEventListener('click', () => {
+          detInputRow.style.display = 'block';
+          detSearch?.focus();
+          DataRepository.ensurePeopleLoaded();
+        });
+
         detSearch.addEventListener('input', () => {
           clearTimeout(detSearchTimeout);
+          const q = (detSearch.value || '').trim();
+          if (q.length < 2) { detResults.style.display = 'none'; return; }
+
+          // Resultado local imediato
+          const localMatches = searchLocal(q.toLowerCase());
+          if (localMatches.length) {
+            renderResults(localMatches);
+          } else {
+            detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Buscando...</div>';
+            detResults.style.display = 'block';
+          }
+
+          // Busca na API (debounced)
+          const seq = ++detSearchSeq;
           detSearchTimeout = setTimeout(() => {
-            renderSearchResults();
-            // Se o cache global ainda está carregando, re-renderiza quando terminar
-            if (!_allPeopleCache) {
-              loadAllPeople().then(() => {
-                if ((detSearch.value || '').trim().length >= 2) renderSearchResults();
+            searchPeopleByPrefix(q)
+              .then(apiMatches => {
+                if (seq !== detSearchSeq) return; // busca mais recente já disparou
+                // Mesclar: local (substring) + API (prefixo), sem duplicatas
+                const merged = new Map();
+                for (const p of localMatches) merged.set(p.id, p);
+                for (const p of apiMatches) if (!merged.has(p.id)) merged.set(p.id, p);
+                renderResults([...merged.values()]);
+              })
+              .catch(err => {
+                if (seq !== detSearchSeq) return;
+                console.warn('[SMAX] Destaque API search error:', err);
+                // Mantém resultados locais se já renderizados
+                if (!localMatches.length) {
+                  detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Nenhuma pessoa encontrada.</div>';
+                }
               });
-            }
-          }, 200);
+          }, 400);
         });
         detSearch.addEventListener('blur', () => setTimeout(() => { detResults.style.display = 'none'; }, 250));
       }
