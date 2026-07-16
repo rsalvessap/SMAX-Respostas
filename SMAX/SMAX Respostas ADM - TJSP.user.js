@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.5
+// @version      1.6
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.5';
+  const SMAX_TOOLKIT_VERSION = '1.6';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -4547,6 +4547,54 @@
       });
     };
 
+    // Cache global de todas as pessoas (carregado 1x em background, sem filtro de grupo)
+    let _allPeopleCache = null;
+    let _allPeoplePromise = null;
+    const loadAllPeople = () => {
+      if (_allPeopleCache) return Promise.resolve(_allPeopleCache);
+      if (_allPeoplePromise) return _allPeoplePromise;
+      _allPeoplePromise = (async () => {
+        const map = new Map();
+        let skip = 0;
+        const pageSize = 250;
+        let total = Infinity;
+        while (skip < total) {
+          try {
+            const data = await ApiClient.request('ems/Person', {
+              method: 'GET',
+              searchParams: { layout: 'Id,Name,Upn,Email', size: String(pageSize), skip: String(skip), order: 'Name asc', meta: 'totalCount' },
+              includeTenantParam: true,
+              timeout: 15000,
+            });
+            const entities = data?.entities || [];
+            if (data?.meta?.total_count != null) total = data.meta.total_count;
+            else if (!entities.length) break;
+            for (const ent of entities) {
+              if (!ent || typeof ent !== 'object') continue;
+              const props = ent.properties || {};
+              const id = props.Id != null ? String(props.Id) : '';
+              if (!id) continue;
+              const name = (props.Name || '').toString().trim();
+              if (!name) continue;
+              map.set(id, { id, name, upn: (props.Upn || '').toString().trim() });
+            }
+            skip += pageSize;
+            if (entities.length < pageSize) break;
+          } catch (err) {
+            console.warn('[SMAX] Destaque loadAllPeople page error:', err);
+            break;
+          }
+        }
+        if (map.size > 0) {
+          _allPeopleCache = map;
+          console.log('[SMAX] Destaque allPeopleCache loaded:', map.size);
+        }
+        return _allPeopleCache;
+      })();
+      _allPeoplePromise.finally(() => { _allPeoplePromise = null; });
+      return _allPeoplePromise;
+    };
+
     const wireDestaqueEvents = () => {
       if (!container) return;
       const detAddBtn   = container.querySelector('#smax-det-add-btn');
@@ -4557,12 +4605,13 @@
         let detSearchTimeout = null;
 
         const collectSearchablePeople = () => {
+          // Se o cache global está disponível, usar ele (mais completo)
+          if (_allPeopleCache) return _allPeopleCache;
+          // Fallback: mescla peopleCache + solicitantes do triageCache
           const merged = new Map();
-          // 1) Agentes do peopleCache
           for (const [id, p] of DataRepository.peopleCache) {
             merged.set(id, { id, name: p.name || '', upn: p.upn || '' });
           }
-          // 2) Solicitantes do triageCache (requesters dos chamados carregados)
           for (const [, entry] of DataRepository.triageCache) {
             const pid = entry.requestedForPersonId;
             if (pid && !merged.has(pid) && entry.requestedForName) {
@@ -4576,6 +4625,7 @@
           detInputRow.style.display = 'block';
           detSearch?.focus();
           DataRepository.ensurePeopleLoaded();
+          loadAllPeople(); // inicia carregamento em background
         });
 
         const renderSearchResults = () => {
@@ -4586,10 +4636,11 @@
           const matches = [...allPeople.values()]
             .filter(p => !existingIds.has(p.id) && ((p.name || '').toLowerCase().includes(q) || (p.upn || '').toLowerCase().includes(q)))
             .slice(0, 15);
+          const loadingNote = !_allPeopleCache ? '<div style="padding:4px 10px;font-size:10px;color:var(--sp-text-dim);border-bottom:1px solid var(--sp-border);">⏳ Carregando lista completa...</div>' : '';
           if (!matches.length) {
-            detResults.innerHTML = '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Nenhuma pessoa encontrada.</div>';
+            detResults.innerHTML = loadingNote + '<div style="padding:8px;color:var(--sp-text-muted);font-size:11px;">Nenhuma pessoa encontrada.</div>';
           } else {
-            detResults.innerHTML = matches.map(p => `
+            detResults.innerHTML = loadingNote + matches.map(p => `
               <div class="smax-det-result" data-id="${Utils.escapeHtml(p.id)}" data-name="${Utils.escapeHtml(p.name)}"
                 style="padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--sp-border);color:var(--sp-text);transition:background .1s;">
                 ${Utils.escapeHtml(p.name)}${p.upn ? ` <span style="font-size:10px;color:var(--sp-text-dim);">(${Utils.escapeHtml(p.upn)})</span>` : ''}
@@ -4610,7 +4661,15 @@
 
         detSearch.addEventListener('input', () => {
           clearTimeout(detSearchTimeout);
-          detSearchTimeout = setTimeout(renderSearchResults, 200);
+          detSearchTimeout = setTimeout(() => {
+            renderSearchResults();
+            // Se o cache global ainda está carregando, re-renderiza quando terminar
+            if (!_allPeopleCache) {
+              loadAllPeople().then(() => {
+                if ((detSearch.value || '').trim().length >= 2) renderSearchResults();
+              });
+            }
+          }, 200);
         });
         detSearch.addEventListener('blur', () => setTimeout(() => { detResults.style.display = 'none'; }, 250));
       }
@@ -5481,6 +5540,15 @@
       }
       if (t.isVip) idLineHtml += ' <span style="padding:1px 5px;border-radius:999px;background:#facc15;color:#854d0e;font-size:9px;font-weight:700;vertical-align:middle;">VIP</span>';
 
+      // Destaque — verifica se o solicitante está na lista pessoal
+      const cachedEntry = DataRepository.triageCache.get(t.id);
+      const reqPersonId = cachedEntry?.requestedForPersonId || '';
+      const reqPersonName = (t.requestedForName || cachedEntry?.requestedForName || '').toLowerCase();
+      const isDestaque = (personal.myDestaque || []).some(d =>
+        (d.id && reqPersonId && d.id === reqPersonId) || (d.name && reqPersonName && d.name.toLowerCase() === reqPersonName)
+      );
+      if (isDestaque) idLineHtml += ' <span style="padding:1px 5px;border-radius:999px;background:#f97316;color:#fff;font-size:9px;font-weight:700;vertical-align:middle;">⭐</span>';
+
       const subjectText = t.subject && t.subject !== t.id ? (t.subject || '').slice(0, 55) : '';
 
       return `
@@ -5542,7 +5610,7 @@
         requestAnimationFrame(() => { _vsProgrammaticScroll = false; });
       }
 
-      // destaque highlights removido (implementação pendente)
+      // destaque highlights — integrado diretamente em buildTicketItemHtml e showTicketDetail
       updateSendButton();
 
       // Event delegation — anexado uma única vez ao container
@@ -5764,7 +5832,18 @@
       }
 
       const openerEl = backdrop.querySelector('#smax-resp-opener');
-      if (openerEl) openerEl.textContent = entry.requestedForName ? `👤 ${entry.requestedForName}` : '';
+      if (openerEl) {
+        if (entry.requestedForName) {
+          const reqPid = entry.requestedForPersonId || '';
+          const reqPname = (entry.requestedForName || '').toLowerCase();
+          const isOpenerDestaque = (personal.myDestaque || []).some(d =>
+            (d.id && reqPid && d.id === reqPid) || (d.name && reqPname && d.name.toLowerCase() === reqPname)
+          );
+          openerEl.innerHTML = `👤 ${Utils.escapeHtml(entry.requestedForName)}${isOpenerDestaque ? ' <span style="padding:1px 6px;border-radius:999px;background:#f97316;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;">⭐ Destaque</span>' : ''}`;
+        } else {
+          openerEl.textContent = '';
+        }
+      }
 
       // Título/cargo do solicitante — busca no peopleCache pelo ID, fallback ao campo da resposta
       const titleEl = backdrop.querySelector('#smax-resp-requester-title');
@@ -5935,7 +6014,7 @@
       backdrop?.querySelectorAll('.smax-resp-ticket-item').forEach(el => {
         el.classList.toggle('active', el.dataset.id === id);
       });
-      // destaque highlights removido (implementação pendente)
+      // destaque highlights — integrado diretamente em buildTicketItemHtml e showTicketDetail
       setStatusMsg('Carregando chamado...', '#93c5fd');
 
       // Função auxiliar para aplicar subject + badge global no item da lista
