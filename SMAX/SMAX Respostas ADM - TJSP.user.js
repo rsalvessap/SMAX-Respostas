@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.9
+// @version      1.10
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.9';
+  const SMAX_TOOLKIT_VERSION = '1.10';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -5552,16 +5552,9 @@
       const reqPersonId = cachedEntry?.requestedForPersonId || '';
       const reqPersonName = (t.requestedForName || cachedEntry?.requestedForName || '').trim().toLowerCase();
       const destaqueList = personal.myDestaque || [];
-      const isDestaque = destaqueList.length > 0 && destaqueList.some(d => {
-        if (d.id && reqPersonId && d.id === reqPersonId) return true;
-        if (d.name && reqPersonName) {
-          const dn = d.name.trim().toLowerCase();
-          if (dn === reqPersonName) return true;
-          // Match parcial: nome do destaque contido no nome do solicitante ou vice-versa
-          if (reqPersonName.includes(dn) || dn.includes(reqPersonName)) return true;
-        }
-        return false;
-      });
+      const isDestaque = destaqueList.length > 0 && destaqueList.some(d =>
+        (d.id && reqPersonId && d.id === reqPersonId) || (d.name && reqPersonName && d.name.trim().toLowerCase() === reqPersonName)
+      );
 
       const subjectText = t.subject && t.subject !== t.id ? (t.subject || '').slice(0, 55) : '';
 
