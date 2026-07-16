@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.8
+// @version      1.9
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.8';
+  const SMAX_TOOLKIT_VERSION = '1.9';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -681,6 +681,8 @@
 .smax-resp-ticket-item { display:flex; align-items:flex-start; gap:8px; padding:9px 10px; cursor:pointer; border-bottom:1px solid var(--sp-border); transition:background .12s, border-left .1s; border-left:3px solid transparent; color:var(--sp-text); }
 .smax-resp-ticket-item:hover { background:var(--sp-primary-bg); }
 .smax-resp-ticket-item.active { background:var(--sp-primary-bg); border-left:3px solid var(--sp-accent); }
+.smax-resp-ticket-item.smax-destaque { border-left:3px solid #f97316; }
+.smax-resp-ticket-item.smax-destaque .smax-resp-ticket-id::after { content:'⭐'; margin-left:5px; font-size:10px; }
 .smax-resp-ticket-cb { margin-top:2px; flex-shrink:0; accent-color:var(--sp-accent); cursor:pointer; }
 .smax-resp-ticket-info { flex:1; min-width:0; }
 .smax-resp-ticket-id { font-size:14px; font-weight:700; color:var(--sp-accent); }
@@ -5548,16 +5550,23 @@
       // Destaque — verifica se o solicitante está na lista pessoal
       const cachedEntry = DataRepository.triageCache.get(t.id);
       const reqPersonId = cachedEntry?.requestedForPersonId || '';
-      const reqPersonName = (t.requestedForName || cachedEntry?.requestedForName || '').toLowerCase();
-      const isDestaque = (personal.myDestaque || []).some(d =>
-        (d.id && reqPersonId && d.id === reqPersonId) || (d.name && reqPersonName && d.name.toLowerCase() === reqPersonName)
-      );
-      if (isDestaque) idLineHtml += ' <span style="padding:1px 5px;border-radius:999px;background:#f97316;color:#fff;font-size:9px;font-weight:700;vertical-align:middle;">⭐</span>';
+      const reqPersonName = (t.requestedForName || cachedEntry?.requestedForName || '').trim().toLowerCase();
+      const destaqueList = personal.myDestaque || [];
+      const isDestaque = destaqueList.length > 0 && destaqueList.some(d => {
+        if (d.id && reqPersonId && d.id === reqPersonId) return true;
+        if (d.name && reqPersonName) {
+          const dn = d.name.trim().toLowerCase();
+          if (dn === reqPersonName) return true;
+          // Match parcial: nome do destaque contido no nome do solicitante ou vice-versa
+          if (reqPersonName.includes(dn) || dn.includes(reqPersonName)) return true;
+        }
+        return false;
+      });
 
       const subjectText = t.subject && t.subject !== t.id ? (t.subject || '').slice(0, 55) : '';
 
       return `
-        <div class="smax-resp-ticket-item${isActive ? ' active' : ''}" data-id="${Utils.escapeHtml(t.id)}" style="display:flex;align-items:flex-start;gap:6px;padding:8px 10px;cursor:pointer;">
+        <div class="smax-resp-ticket-item${isActive ? ' active' : ''}${isDestaque ? ' smax-destaque' : ''}" data-id="${Utils.escapeHtml(t.id)}" style="display:flex;align-items:flex-start;gap:6px;padding:8px 10px;cursor:pointer;">
           <div class="smax-resp-tick-sel" data-id="${Utils.escapeHtml(t.id)}" title="Selecionar para lote"
             style="flex-shrink:0;width:16px;height:16px;border-radius:4px;margin-top:2px;border:1.5px solid ${isChecked ? 'var(--sp-accent)' : 'var(--sp-border)'};background:${isChecked ? 'var(--sp-accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;transition:all .12s;cursor:pointer;">
             ${isChecked ? '✓' : ''}
@@ -5837,18 +5846,7 @@
       }
 
       const openerEl = backdrop.querySelector('#smax-resp-opener');
-      if (openerEl) {
-        if (entry.requestedForName) {
-          const reqPid = entry.requestedForPersonId || '';
-          const reqPname = (entry.requestedForName || '').toLowerCase();
-          const isOpenerDestaque = (personal.myDestaque || []).some(d =>
-            (d.id && reqPid && d.id === reqPid) || (d.name && reqPname && d.name.toLowerCase() === reqPname)
-          );
-          openerEl.innerHTML = `👤 ${Utils.escapeHtml(entry.requestedForName)}${isOpenerDestaque ? ' <span style="padding:1px 6px;border-radius:999px;background:#f97316;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;">⭐ Destaque</span>' : ''}`;
-        } else {
-          openerEl.textContent = '';
-        }
-      }
+      if (openerEl) openerEl.textContent = entry.requestedForName ? `👤 ${entry.requestedForName}` : '';
 
       // Título/cargo do solicitante — busca no peopleCache pelo ID, fallback ao campo da resposta
       const titleEl = backdrop.querySelector('#smax-resp-requester-title');
