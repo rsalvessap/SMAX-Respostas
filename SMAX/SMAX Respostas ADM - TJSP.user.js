@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.10
+// @version      1.11
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.10';
+  const SMAX_TOOLKIT_VERSION = '1.11';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -1226,6 +1226,51 @@
       .replace(/\u00a0/gi, ' ')
       .trim();
 
+    // Normaliza HTML gerado por contenteditable para envio à API SMAX.
+    // Problema: navegadores geram <div>, <span style="...">, markup Office (<o:p>, mso-*),
+    // etc. O SMAX trunca campos rich-text grandes (converte para links server-side).
+    // Esta função:
+    //  1. Remove markup Office e estilos desnecessários
+    //  2. Converte <div>/<p> em <br> para layout flat
+    //  3. Preserva formatação inline (b, i, u, a) e imagens
+    //  4. Aplica sanitizeRichText para remover tags perigosas
+    const normalizeContentEditableHtml = (html) => {
+      if (!html) return '';
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      // Remove tags Office-specific e elementos invisíveis
+      tmp.querySelectorAll('o\\:p, xml, style, meta, link, title, head').forEach(el => el.remove());
+      // Remove atributos class e style de TODOS os elementos (limpeza de paste Office/web)
+      tmp.querySelectorAll('*').forEach(el => {
+        el.removeAttribute('class');
+        el.removeAttribute('style');
+        el.removeAttribute('data-mce-style');
+        el.removeAttribute('data-mce-fragment');
+      });
+      // Converte <div> e <p> em conteúdo + <br> (layout flat, compatível com SMAX)
+      const flattenBlocks = (container) => {
+        const blocks = container.querySelectorAll('div, p');
+        // Processa de dentro para fora (inner blocks primeiro)
+        Array.from(blocks).reverse().forEach(block => {
+          const br = document.createElement('br');
+          // Insere <br> antes do bloco, depois move os filhos para fora
+          block.parentNode.insertBefore(br, block);
+          while (block.firstChild) block.parentNode.insertBefore(block.firstChild, block);
+          block.remove();
+        });
+      };
+      flattenBlocks(tmp);
+      // Colapsa múltiplos <br> consecutivos em no máximo 2
+      let result = tmp.innerHTML
+        .replace(/(<br\s*\/?\s*>){3,}/gi, '<br><br>')
+        .replace(/^(<br\s*\/?\s*>)+/i, '')
+        .replace(/(<br\s*\/?\s*>)+$/i, '')
+        .trim();
+      // Aplica sanitizeRichText para eliminar qualquer tag perigosa residual
+      result = sanitizeRichText(result) || result;
+      return result;
+    };
+
     const triggerFileDownload = (objectUrl, filename) => {
       const link = document.createElement('a');
       link.href = objectUrl;
@@ -1357,6 +1402,7 @@
       formatBrDate,
       deepClone,
       normalizeHtml,
+      normalizeContentEditableHtml,
       triggerFileDownload,
       linkifyCNJ,
       normalizeCNJ,
@@ -2806,8 +2852,16 @@
       // os comentários de sistema seriam removidos e o servidor rejeita com
       // "Comentários do sistema não podem ser alterados" (systemCommentsValidation).
       const allComments = [...existingComments, newComment];
-      const discProps = { Id: String(ticketId), Comments: JSON.stringify({ Comment: allComments }) };
+      const commentsJson = JSON.stringify({ Comment: allComments });
+      const discProps = { Id: String(ticketId), Comments: commentsJson };
       if (lastUpdateTime) discProps.LastUpdateTime = lastUpdateTime;
+
+      // Diagnóstico: logar tamanhos para detectar payloads que o SMAX possa truncar
+      console.info('[SMAX] postDiscussion payload →', ticketId,
+        '| bodyHtml:', bodyHtml.length, 'chars',
+        '| existingComments:', existingComments.length,
+        '| commentsJson:', commentsJson.length, 'chars');
+
       const body = {
         entities: [{ entity_type: 'Request', properties: discProps }],
         operation: 'UPDATE'
@@ -7329,7 +7383,8 @@
               const chipBtn = backdrop.querySelector('#smax-resp-gse-btn');
               setBatchPending('gse', { id: gid, name: gname });
               if (chipEl) chipEl.textContent = gname;
-              const fwdText = cb.checked ? (picker.querySelector('#smax-gse-fwd-editor')?.innerHTML || '').trim() : '';
+              const fwdRaw = cb.checked ? (picker.querySelector('#smax-gse-fwd-editor')?.innerHTML || '').trim() : '';
+              const fwdText = fwdRaw ? Utils.normalizeContentEditableHtml(fwdRaw) : '';
               setBatchPending('forwarding', fwdText ? { text: fwdText } : null);
               if (chipBtn) {
                 chipBtn.classList.add('dirty');
@@ -8863,8 +8918,9 @@
         };
 
         newDiscSendBtn.addEventListener('click', async () => {
-          const bodyHtml = newDiscEditor.innerHTML.trim();
-          if (!bodyHtml || bodyHtml === '<br>') { setDiscStatus('Escreva algo antes de enviar.', '#fca5a5'); return; }
+          const rawHtml = newDiscEditor.innerHTML.trim();
+          if (!rawHtml || rawHtml === '<br>') { setDiscStatus('Escreva algo antes de enviar.', '#fca5a5'); return; }
+          const bodyHtml = Utils.normalizeContentEditableHtml(rawHtml) || rawHtml;
 
           const commentTo = backdrop.querySelector('#smax-resp-new-disc-to')?.value || 'Agent';
           const purposeCode = backdrop.querySelector('#smax-resp-new-disc-purpose')?.value || 'StatusUpdate';
