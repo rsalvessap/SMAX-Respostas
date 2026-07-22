@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.11
+// @version      1.12
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.11';
+  const SMAX_TOOLKIT_VERSION = '1.12';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -50,7 +50,6 @@
       ausentes: [],
       enableRealWrites: true,
       defaultGlobalChangeId: '',
-      personalFinalsRaw: '',
       myPersonId: '',
       myPersonName: '',
       sharedConfigUrl: 'https://raw.githubusercontent.com/rsalvessap/SMAX-TOOLS/master/shared-config.json',
@@ -3582,16 +3581,9 @@
       const textMatchersHtml    = (team.matchers || []).filter(m => m.type === 'regex' && m.scope === 'text').map(matcherRowHtml).join('');
 
       const workersHtml = (team.workers || []).map((w, idx) => {
-        const normName = Utils.normalizeText(w.name || '');
         return `
         <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;background:var(--sp-surface-2);border:1px solid var(--sp-border);padding:8px;border-radius:8px;flex-wrap:wrap;">
           <input type="text" class="smax-worker-name" data-idx="${idx}" value="${Utils.escapeHtml(w.name || '')}" style="flex:1;min-width:120px;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Nome do Responsável">
-          <input type="text" class="smax-worker-digits" data-idx="${idx}" value="${Utils.escapeHtml(w.digits || '')}" style="width:80px;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Dígitos (ex: 0-9)">
-          <div class="smax-worker-absent-wrapper" style="display:flex;align-items:center;cursor:pointer;user-select:none;">
-             <input type="checkbox" class="smax-worker-absent" data-idx="${idx}" ${w.isAbsent ? 'checked' : ''} style="display:none;">
-             <div class="smax-absent-fake" style="width:14px;height:14px;border:1px solid ${w.isAbsent ? 'var(--sp-danger)' : 'var(--sp-border)'};margin-right:4px;background:${w.isAbsent ? 'var(--sp-danger)' : 'transparent'};border-radius:2px;display:flex;align-items:center;justify-content:center;"></div>
-             <span style="font-size:10px;color:var(--sp-danger-text);">Ausente</span>
-          </div>
           <button class="smax-worker-del-btn" data-idx="${idx}" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
         </div>
       `; }).join('');
@@ -3651,8 +3643,8 @@
           </div>
 
           <div style="margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sp-text);">Membros e Distribuição
-              <span title="Cada membro recebe um intervalo de dígitos finais do ID do chamado (ex: '0-9' significa que chamados terminados em 0 a 9 são desse membro). A triagem usa isso para sugerir automaticamente quem deve atender. Marque 'Ausente' para que o sistema pule para o próximo par de dígitos ao sugerir responsável." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sp-text);">Membros da equipe
+              <span title="Pessoas que fazem parte desta equipe. Aparecem na seção Especialistas e são usados para assinaturas." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
             </div>
             <div style="margin-bottom:8px;border:1px solid var(--sp-border);background:var(--sp-surface-2);border-radius:8px;padding:8px;">
               <input type="text" id="smax-team-person-search" placeholder="🔍 Buscar pessoa para adicionar..."
@@ -3700,17 +3692,6 @@
 
       // Edit View Events
       if (editingTeamId) {
-        // Toggle Logic for existing rows
-        container.querySelectorAll('.smax-worker-absent-wrapper').forEach(wrapper => {
-          const chk = wrapper.querySelector('.smax-worker-absent');
-          const fake = wrapper.querySelector('.smax-absent-fake');
-          wrapper.addEventListener('click', () => {
-            chk.checked = !chk.checked;
-            fake.style.background = chk.checked ? 'var(--sp-danger)' : 'var(--sp-surface)';
-            fake.style.borderColor = chk.checked ? 'var(--sp-danger)' : 'var(--sp-border)';
-          });
-        });
-
         const cancelBtn = container.querySelector('.smax-cancel-edit');
         if (cancelBtn) cancelBtn.addEventListener('click', () => { editingTeamId = null; renderPanel(); });
 
@@ -3737,35 +3718,13 @@
           const newWorkers = [];
           container.querySelectorAll('#smax-workers-list > div').forEach(div => {
             const nameInput = div.querySelector('.smax-worker-name');
-            const digitsInput = div.querySelector('.smax-worker-digits');
-            const absentInput = div.querySelector('.smax-worker-absent');
-            if (nameInput && digitsInput) {
+            if (nameInput) {
               const name = nameInput.value.trim();
-              const digits = digitsInput.value.trim();
-              const isAbsent = absentInput ? !!absentInput.checked : false;
-              if (name) newWorkers.push({ name, digits, isAbsent });
+              if (name) newWorkers.push({ name });
             }
           });
           // Sort workers alphabetically by name for better UX
           newWorkers.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
-
-          // Validate digit range overlaps between workers
-          const digitOwnerMap = {};
-          const overlapDetails = [];
-          for (const w of newWorkers) {
-            const parsed = Utils.parseDigitRanges(w.digits);
-            for (const d of parsed) {
-              if (digitOwnerMap[d] !== undefined) {
-                overlapDetails.push(`dígito ${d}: "${digitOwnerMap[d]}" e "${w.name}"`);
-              } else {
-                digitOwnerMap[d] = w.name;
-              }
-            }
-          }
-          if (overlapDetails.length) {
-            const msg = `⚠️ Sobreposição de dígitos detectada:\n${overlapDetails.slice(0, 5).join('\n')}${overlapDetails.length > 5 ? `\n...e mais ${overlapDetails.length - 5}` : ''}\n\nSalvar assim pode causar distribuição imprevisível. Continuar?`;
-            if (!confirm(msg)) return;
-          }
 
           // Collect matchers from both scope sections
           const newMatchers = [];
@@ -3924,27 +3883,10 @@
           tempDiv.innerHTML = `
             <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;background:var(--sp-surface-2);border:1px solid var(--sp-border);padding:8px;border-radius:8px;">
               <input type="text" class="smax-worker-name" value="${Utils.escapeHtml(name)}" style="flex:1;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Nome do Responsável">
-              <input type="text" class="smax-worker-digits" value="" style="width:80px;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Digitos (ex: 0-9)">
-              <div class="smax-worker-absent-wrapper" style="display:flex;align-items:center;cursor:pointer;user-select:none;">
-                <input type="checkbox" class="smax-worker-absent" style="display:none;">
-                <div class="smax-absent-fake" style="width:14px;height:14px;border:1px solid var(--sp-border);margin-right:4px;background:transparent;border-radius:2px;display:flex;align-items:center;justify-content:center;"></div>
-                <span style="font-size:10px;color:var(--sp-danger-text);">Ausente</span>
-              </div>
               <button class="smax-remove-temp-row" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
             </div>`;
           const row = tempDiv.firstElementChild;
           row.querySelector('.smax-remove-temp-row').addEventListener('click', () => row.remove());
-
-          // Custom toggle logic
-          const wrapper = row.querySelector('.smax-worker-absent-wrapper');
-          const chk = row.querySelector('.smax-worker-absent');
-          const fake = row.querySelector('.smax-absent-fake');
-
-          wrapper.addEventListener('click', () => {
-            chk.checked = !chk.checked;
-            fake.style.background = chk.checked ? 'var(--sp-danger)' : 'transparent';
-            fake.style.borderColor = chk.checked ? 'var(--sp-danger)' : 'var(--sp-border)';
-          });
           if (list) list.appendChild(tempDiv.firstElementChild);
           // Clear search
           searchInput.value = '';
@@ -4007,7 +3949,7 @@
     // Shareable config keys (no personal identity — meant for team distribution)
     const CONFIG_KEYS = [
       'nameGroups', 'ausentes', 'enableRealWrites',
-      'defaultGlobalChangeId', 'personalFinalsRaw', 'teamsConfigRaw'
+      'defaultGlobalChangeId', 'teamsConfigRaw'
     ];
 
     const buildConfigJSON = () => {

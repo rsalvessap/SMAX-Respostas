@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.3
+// @version      1.4
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.3';
+  const SMAX_TOOLKIT_VERSION = '1.4';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -50,7 +50,6 @@
       ausentes: [],
       enableRealWrites: true,
       defaultGlobalChangeId: '',
-      personalFinalsRaw: '',
       myPersonId: '',
       myPersonName: '',
       sharedConfigUrl: 'https://raw.githubusercontent.com/rsalvessap/SMAX-TOOLS/master/shared-config.json',
@@ -3458,28 +3457,18 @@
     // --- Team Editor Methods ---
 
     const renderTeamsList = () => {
-      if (editingTeamId) return renderTeamEditor(editingTeamId);
-
-      const allTeams = [
-        ...currentTeams,
-        ...TeamsConfig.getTeams().filter(t => t._shared),
-      ];
+      const allTeams = TeamsConfig.getTeams();
       const listHtml = allTeams.map(t => {
         const isDefault = !!t.isDefault;
-        const isShared = !!t._shared;
+        const membersNames = (t.workers || []).map(w => Utils.escapeHtml(w.name || '')).filter(Boolean);
         return `
-          <div class="smax-team-item" style="border:1px solid ${isShared ? 'var(--sp-pending)' : 'var(--sp-border)'};border-radius:10px;padding:10px 12px;margin-bottom:8px;background:${isShared ? 'var(--sp-pending-bg)' : 'var(--sp-surface-2)'};transition:border-color .15s ease,box-shadow .15s ease;">
+          <div class="smax-team-item" style="border:1px solid var(--sp-border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--sp-surface-2);transition:border-color .15s ease,box-shadow .15s ease;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div>
+              <div style="flex:1;min-width:0;">
                 <strong style="font-size:13px;color:var(--sp-text);">${Utils.escapeHtml(t.name || t.id || 'Sem nome')}</strong>
                 ${isDefault ? '<span style="font-size:10px;background:var(--sp-primary-bg);color:var(--sp-accent);padding:2px 6px;border-radius:999px;margin-left:6px;border:1px solid var(--sp-accent);">Padrão</span>' : ''}
-                ${isShared ? '<span style="font-size:10px;background:var(--sp-pending-bg);color:var(--sp-pending);padding:2px 6px;border-radius:999px;margin-left:6px;border:1px solid var(--sp-pending);" title="Carregada do Config. Compartilhada — somente leitura">☁️ Compartilhada</span>' : ''}
-                <div class="smax-team-prio-info" style="font-size:11px;color:var(--sp-text-muted);margin-top:2px;">Membros: ${t.workers ? t.workers.length : 0}</div>
-              </div>
-              <div style="display:flex;gap:6px;">
-                ${!isShared ? `<button class="smax-team-edit-btn" data-id="${t.id}" style="font-size:11px;padding:6px 12px;cursor:pointer;background:var(--sp-surface);color:var(--sp-text);border:1px solid var(--sp-border);border-radius:6px;transition:all .15s ease;">Editar</button>` : ''}
-                ${!isDefault && !isShared ? `<button class="smax-team-del-btn" data-id="${t.id}" style="font-size:11px;padding:6px 12px;cursor:pointer;color:var(--sp-danger);background:var(--sp-danger-bg);border:1px solid var(--sp-danger-border);border-radius:6px;transition:all .15s ease;">Remover</button>` : ''}
-                ${isShared ? '<span style="font-size:11px;color:var(--sp-text-muted);padding:6px 8px;">somente leitura</span>' : ''}
+                <div style="font-size:11px;color:var(--sp-text-muted);margin-top:2px;">Membros: ${t.workers ? t.workers.length : 0}${membersNames.length ? ' — ' + membersNames.join(', ') : ''}</div>
+                ${(t.gseRules || []).length ? `<div style="font-size:10px;color:var(--sp-text-dim);margin-top:2px;">GSEs: ${(t.gseRules || []).map(r => Utils.escapeHtml(r.name || r.id)).join(', ')}</div>` : ''}
               </div>
             </div>
           </div>
@@ -3488,481 +3477,34 @@
 
       return `
         <div style="margin-top:16px;border-top:1px solid var(--sp-border);padding-top:12px;">
+          <div style="margin-bottom:12px;padding:10px 14px;background:var(--sp-primary-bg);border:1px solid var(--sp-accent);border-radius:8px;">
+            <div style="font-size:12px;color:var(--sp-accent);font-weight:600;">Gerenciado pelo ADM</div>
+            <div style="font-size:11px;color:var(--sp-text-muted);margin-top:2px;">As equipes s\u00e3o configuradas pelo administrador (SMAX Respostas ADM) e distribu\u00eddas automaticamente via Config. Compartilhada.</div>
+          </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <span style="font-weight:600;color:var(--sp-text);font-size:14px;">Equipes e Regras</span>
-            <button id="smax-add-team-btn" style="font-size:12px;padding:6px 14px;cursor:pointer;background:var(--sp-accent);color:var(--sp-on-accent);border:none;border-radius:8px;">+ Nova Equipe</button>
+            <span style="font-weight:600;color:var(--sp-text);font-size:14px;">Equipes</span>
           </div>
-          <div id="smax-teams-list-container">${listHtml}</div>
+          <div id="smax-teams-list-container">${listHtml || '<div style="font-size:12px;color:var(--sp-text-muted);padding:12px;text-align:center;">Nenhuma equipe configurada. Aguardando sincroniza\u00e7\u00e3o com o ADM.</div>'}</div>
         </div>
       `;
     };
 
-    const renderTeamEditor = (teamId) => {
-      const isNew = teamId === '__NEW__';
-      const team = isNew ? { id: '', priority: 0, gseRules: [], workers: [] } : currentTeams.find(t => t.id === teamId);
-      if (!team) return '<div>Equipe não encontrada. <button class="smax-cancel-edit">Voltar</button></div>';
-
-      const isGeneralTeam = team.id === 'geral';
-      const gseHtml = (team.gseRules || []).map((r, idx) => `
-        <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
-          <input type="hidden" class="smax-gse-id" value="${Utils.escapeHtml(r.id)}">
-          <input type="text" class="smax-gse-name" value="${Utils.escapeHtml(r.name || r.id)}" disabled style="flex:1;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-surface-2);color:var(--sp-text-muted);opacity:.8;">
-          <button class="smax-gse-del-btn" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
-        </div>
-      `).join('');
-
-      const matcherRowHtml = (m) => {
-        const displayText = m._displayText || m.pattern || '';
-        const scope = m.scope || 'location';
-        return `
-          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;background:var(--sp-surface-2);border:1px solid var(--sp-border);padding:6px 8px;border-radius:8px;">
-            <input type="hidden" class="smax-matcher-pattern" value="${Utils.escapeHtml(m.pattern || '')}">
-            <input type="hidden" class="smax-matcher-scope" value="${Utils.escapeHtml(scope)}">
-            <span style="flex:1;font-size:11px;color:var(--sp-text-muted);">contém: <strong style="color:var(--sp-text);">${Utils.escapeHtml(displayText)}</strong></span>
-            <button class="smax-matcher-del-btn" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
-          </div>`;
-      };
-      const locationMatchersHtml = (team.matchers || []).filter(m => m.type === 'regex' && (m.scope || 'location') === 'location').map(matcherRowHtml).join('');
-      const textMatchersHtml    = (team.matchers || []).filter(m => m.type === 'regex' && m.scope === 'text').map(matcherRowHtml).join('');
-
-      const workersHtml = (team.workers || []).map((w, idx) => {
-        const normName = Utils.normalizeText(w.name || '');
-        return `
-        <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;background:var(--sp-surface-2);border:1px solid var(--sp-border);padding:8px;border-radius:8px;flex-wrap:wrap;">
-          <input type="text" class="smax-worker-name" data-idx="${idx}" value="${Utils.escapeHtml(w.name || '')}" style="flex:1;min-width:120px;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Nome do Responsável">
-          <input type="text" class="smax-worker-digits" data-idx="${idx}" value="${Utils.escapeHtml(w.digits || '')}" style="width:80px;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Dígitos (ex: 0-9)">
-          <div class="smax-worker-absent-wrapper" style="display:flex;align-items:center;cursor:pointer;user-select:none;">
-             <input type="checkbox" class="smax-worker-absent" data-idx="${idx}" ${w.isAbsent ? 'checked' : ''} style="display:none;">
-             <div class="smax-absent-fake" style="width:14px;height:14px;border:1px solid ${w.isAbsent ? 'var(--sp-danger)' : 'var(--sp-border)'};margin-right:4px;background:${w.isAbsent ? 'var(--sp-danger)' : 'transparent'};border-radius:2px;display:flex;align-items:center;justify-content:center;"></div>
-             <span style="font-size:10px;color:var(--sp-danger-text);">Ausente</span>
-          </div>
-          <button class="smax-worker-del-btn" data-idx="${idx}" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
-        </div>
-      `; }).join('');
-
-      return `
-        <div style="margin-top:16px;border:1px solid var(--sp-border);padding:14px;border-radius:12px;background:var(--sp-surface);">
-          <div style="font-weight:600;margin-bottom:12px;color:var(--sp-accent);font-size:15px;">${isNew ? '✨ Criar Nova Equipe' : '✏️ Editar Equipe ' + team.id}</div>
-
-          <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:12px;">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--sp-text-muted);margin-bottom:4px;">Qual o nome da equipe?</label>
-              <input type="text" id="smax-edit-id" value="${Utils.escapeHtml(team.name || team.id || '')}" ${isGeneralTeam ? 'disabled' : ''} placeholder="Ex: JEC, Cível, Criminal..." style="width:100%;padding:8px 12px;border:1px solid var(--sp-border);border-radius:8px;background:var(--sp-input-bg);color:var(--sp-text);font-size:13px;box-sizing:border-box;${isGeneralTeam ? 'opacity:.6;cursor:not-allowed;' : ''}">
-            </div>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sp-text);">Quais GSE a equipe atende?
-              <span title="GSE = Grupo de Suporte Especializado (ExpertGroup no SMAX). Chamados atribuídos a esses grupos serão roteados automaticamente para esta equipe na triagem. Também são usados como filtro na janela de Consulta de Chamados." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
-            </div>
-            ${isGeneralTeam ? '<div style="font-size:11px;color:var(--sp-text-muted);margin-bottom:8px;">⚠️ A equipe GERAL não permite edição de GSEs (aceita todos os grupos).</div>' : `
-            <div style="margin-bottom:8px;border:1px solid var(--sp-border);background:var(--sp-surface-2);border-radius:8px;padding:8px;">
-              <input type="text" id="smax-team-gse-search" placeholder="🔍 Buscar GSE para adicionar..."
-                     style="width:100%;padding:6px 10px;border:1px solid var(--sp-border);border-radius:6px;font-size:12px;margin-bottom:4px;background:var(--sp-input-bg);color:var(--sp-text);box-sizing:border-box;">
-              <div id="smax-team-gse-results" style="max-height:100px;overflow-y:auto;border-top:1px solid var(--sp-border);display:none;background:var(--sp-surface);"></div>
-            </div>
-            <div id="smax-gse-list">${gseHtml}</div>`}
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sp-text);">Palavras-chave para roteamento
-              <span title="Rota alternativa ao GSE: quando o chamado não bate com nenhum GSE configurado, o sistema verifica essas palavras-chave. Usado APENAS na triagem — não serve para o filtro de Consulta de Chamados." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
-            </div>
-            ${isGeneralTeam ? '<div style="font-size:12px;color:var(--sp-text-muted);margin-bottom:8px;">⚠️ A equipe GERAL não utiliza palavras-chave (é o fallback para tudo que não bateu em nenhuma regra).</div>' : `
-            <div style="font-size:11px;color:var(--sp-text-muted);margin-bottom:10px;">A equipe será sugerida quando o chamado contiver a palavra-chave no campo correspondente (insensível a maiúsculas/minúsculas).</div>
-            <div style="margin-bottom:10px;border:1px solid var(--sp-border);border-radius:8px;padding:10px;background:var(--sp-surface-2);">
-              <div style="font-size:11px;font-weight:600;color:var(--sp-accent);margin-bottom:6px;">📍 Local de Registro
-                <span style="font-weight:400;color:var(--sp-text-dim);margin-left:4px;">(campo RegisteredForLocation do chamado)</span>
-              </div>
-              <div style="display:flex;gap:6px;margin-bottom:6px;">
-                <input type="text" id="smax-team-location-input" placeholder="Ex: CAMPINAS, SANTOS, CAPITAL..."
-                       style="flex:1;padding:6px 10px;border:1px solid var(--sp-border);border-radius:6px;font-size:12px;background:var(--sp-input-bg);color:var(--sp-text);box-sizing:border-box;">
-                <button id="smax-add-location-matcher-btn" style="padding:6px 12px;background:var(--sp-primary-bg);color:var(--sp-accent);border:1px solid var(--sp-accent);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;">+ Adicionar</button>
-              </div>
-              <div id="smax-matchers-list-location">${locationMatchersHtml}</div>
-            </div>
-            <div style="border:1px solid var(--sp-border);border-radius:8px;padding:10px;background:var(--sp-surface-2);">
-              <div style="font-size:11px;font-weight:600;color:var(--sp-text-muted);margin-bottom:6px;">📝 Assunto / Descrição
-                <span style="font-weight:400;color:var(--sp-text-dim);margin-left:4px;">(título e corpo do chamado)</span>
-              </div>
-              <div style="display:flex;gap:6px;margin-bottom:6px;">
-                <input type="text" id="smax-team-text-input" placeholder="Ex: IMPRESSORA, VPN, SENHA..."
-                       style="flex:1;padding:6px 10px;border:1px solid var(--sp-border);border-radius:6px;font-size:12px;background:var(--sp-input-bg);color:var(--sp-text);box-sizing:border-box;">
-                <button id="smax-add-text-matcher-btn" style="padding:6px 12px;background:var(--sp-primary-bg);color:var(--sp-accent);border:1px solid var(--sp-accent);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;">+ Adicionar</button>
-              </div>
-              <div id="smax-matchers-list-text">${textMatchersHtml}</div>
-            </div>`}
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sp-text);">Membros e Distribuição
-              <span title="Cada membro recebe um intervalo de dígitos finais do ID do chamado (ex: '0-9' significa que chamados terminados em 0 a 9 são desse membro). A triagem usa isso para sugerir automaticamente quem deve atender. Marque 'Ausente' para que o sistema pule para o próximo par de dígitos ao sugerir responsável." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
-            </div>
-            <div style="margin-bottom:8px;border:1px solid var(--sp-border);background:var(--sp-surface-2);border-radius:8px;padding:8px;">
-              <input type="text" id="smax-team-person-search" placeholder="🔍 Buscar pessoa para adicionar..."
-                     style="width:100%;padding:6px 10px;border:1px solid var(--sp-border);border-radius:6px;font-size:12px;margin-bottom:4px;background:var(--sp-input-bg);color:var(--sp-text);box-sizing:border-box;">
-              <div id="smax-team-person-results" style="max-height:100px;overflow-y:auto;border-top:1px solid var(--sp-border);display:none;background:var(--sp-surface);"></div>
-            </div>
-            <div id="smax-workers-list">${workersHtml}</div>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sp-text);">Assinatura da equipe
-              <span title="HTML da assinatura que aparece no seletor ✒️ do editor de solução para esta equipe." style="cursor:help;margin-left:4px;font-size:11px;color:var(--sp-text-dim);font-weight:400;">ℹ️</span>
-            </div>
-            <textarea id="smax-team-signature" placeholder="<p>Atenciosamente,<br>Equipe de Suporte</p>" rows="3"
-              style="width:100%;padding:7px 10px;border:1px solid var(--sp-border);border-radius:8px;background:var(--sp-input-bg);color:var(--sp-text);font-size:11px;resize:vertical;box-sizing:border-box;font-family:monospace;outline:none;">${Utils.escapeHtml((SignatureManager.getTeamSignatures()[team.id]) || '')}</textarea>
-          </div>
-
-          <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
-            <button class="smax-cancel-edit" style="padding:8px 14px;cursor:pointer;background:var(--sp-surface-2);color:var(--sp-text);border:1px solid var(--sp-border);border-radius:8px;font-size:12px;">Cancelar</button>
-            <button id="smax-save-team-btn" style="padding:8px 16px;cursor:pointer;background:var(--sp-accent);color:var(--sp-on-accent);border:none;border-radius:8px;font-size:12px;font-weight:600;">Salvar Equipe</button>
-          </div>
-        </div>
-      `;
-    };
-
+    // Equipes: seção somente-leitura (gerenciada pelo ADM)
     const wireTeamEvents = () => {
-      // List View Events
-      const addBtn = container.querySelector('#smax-add-team-btn');
-      if (addBtn) addBtn.addEventListener('click', () => { editingTeamId = '__NEW__'; renderPanel(); });
-
-      container.querySelectorAll('.smax-team-edit-btn').forEach(btn => {
-        btn.addEventListener('click', () => { editingTeamId = btn.dataset.id; renderPanel(); });
-      });
-
-      container.querySelectorAll('.smax-team-del-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          if (confirm(`Tem certeza que deseja remover a equipe "${id}"?`)) {
-            currentTeams = currentTeams.filter(t => t.id !== id);
-            saveConfig();
-            renderPanel();
-          }
-        });
-      });
-
-      // Edit View Events
-      if (editingTeamId) {
-        // Toggle Logic for existing rows
-        container.querySelectorAll('.smax-worker-absent-wrapper').forEach(wrapper => {
-          const chk = wrapper.querySelector('.smax-worker-absent');
-          const fake = wrapper.querySelector('.smax-absent-fake');
-          wrapper.addEventListener('click', () => {
-            chk.checked = !chk.checked;
-            fake.style.background = chk.checked ? 'var(--sp-danger)' : 'var(--sp-surface)';
-            fake.style.borderColor = chk.checked ? 'var(--sp-danger)' : 'var(--sp-border)';
-          });
-        });
-
-        const cancelBtn = container.querySelector('.smax-cancel-edit');
-        if (cancelBtn) cancelBtn.addEventListener('click', () => { editingTeamId = null; renderPanel(); });
-
-        const saveBtn = container.querySelector('#smax-save-team-btn');
-        if (saveBtn) saveBtn.addEventListener('click', () => {
-          const idInput = container.querySelector('#smax-edit-id');
-          const newId = idInput.value.trim();
-          const newPrio = 0;
-
-          if (!newId) return alert('O ID da equipe é obrigatório.');
-          if (editingTeamId === '__NEW__' && currentTeams.some(t => t.id === newId)) return alert('Já existe uma equipe com este ID.');
-
-          // Collect GSEs
-          const newGseRules = [];
-          container.querySelectorAll('#smax-gse-list > div').forEach(div => {
-            const idInput = div.querySelector('.smax-gse-id');
-            const nameInput = div.querySelector('.smax-gse-name');
-            if (idInput && nameInput) {
-              newGseRules.push({ id: idInput.value, name: nameInput.value });
-            }
-          });
-
-          // Collect workers
-          const newWorkers = [];
-          container.querySelectorAll('#smax-workers-list > div').forEach(div => {
-            const nameInput = div.querySelector('.smax-worker-name');
-            const digitsInput = div.querySelector('.smax-worker-digits');
-            const absentInput = div.querySelector('.smax-worker-absent');
-            if (nameInput && digitsInput) {
-              const name = nameInput.value.trim();
-              const digits = digitsInput.value.trim();
-              const isAbsent = absentInput ? !!absentInput.checked : false;
-              if (name) newWorkers.push({ name, digits, isAbsent });
-            }
-          });
-          // Sort workers alphabetically by name for better UX
-          newWorkers.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
-
-          // Validate digit range overlaps between workers
-          const digitOwnerMap = {};
-          const overlapDetails = [];
-          for (const w of newWorkers) {
-            const parsed = Utils.parseDigitRanges(w.digits);
-            for (const d of parsed) {
-              if (digitOwnerMap[d] !== undefined) {
-                overlapDetails.push(`dígito ${d}: "${digitOwnerMap[d]}" e "${w.name}"`);
-              } else {
-                digitOwnerMap[d] = w.name;
-              }
-            }
-          }
-          if (overlapDetails.length) {
-            const msg = `⚠️ Sobreposição de dígitos detectada:\n${overlapDetails.slice(0, 5).join('\n')}${overlapDetails.length > 5 ? `\n...e mais ${overlapDetails.length - 5}` : ''}\n\nSalvar assim pode causar distribuição imprevisível. Continuar?`;
-            if (!confirm(msg)) return;
-          }
-
-          // Collect matchers from both scope sections
-          const newMatchers = [];
-          const collectMatchers = (listId, scope) => {
-            container.querySelectorAll(`#${listId} > div`).forEach(div => {
-              const patternInput = div.querySelector('.smax-matcher-pattern');
-              if (patternInput) {
-                const pattern = patternInput.value.trim();
-                if (pattern) newMatchers.push({ type: 'regex', pattern, scope, _displayText: pattern.replace(/\\/g, '') });
-              }
-            });
-          };
-          collectMatchers('smax-matchers-list-location', 'location');
-          collectMatchers('smax-matchers-list-text', 'text');
-
-          // Update state
-          if (editingTeamId === '__NEW__') {
-            const newTeam = { id: newId, name: newId, priority: newPrio, gseRules: newGseRules, workers: newWorkers, matchers: newMatchers };
-            currentTeams.push(newTeam);
-          } else {
-            const idx = currentTeams.findIndex(t => t.id === editingTeamId);
-            if (idx !== -1) {
-              const existingTeam = currentTeams[idx];
-              const isDefault = !!existingTeam.isDefault;
-              const updatedName = isDefault ? existingTeam.name : newId;
-              const updatedId = isDefault ? existingTeam.id : newId;
-              currentTeams[idx] = { ...existingTeam, id: updatedId, name: updatedName, priority: newPrio, gseRules: newGseRules, workers: newWorkers, matchers: newMatchers };
-            }
-          }
-
-          // Save team signature — use the actual persisted team ID
-          const sigTextarea = container.querySelector('#smax-team-signature');
-          if (sigTextarea) {
-            const savedTeam = currentTeams.find(t => t.id === newId) || currentTeams.find(t => t.id === editingTeamId);
-            const finalTeamId = savedTeam ? savedTeam.id : newId;
-            const sigs = SignatureManager.getTeamSignatures();
-            const sigVal = sigTextarea.value.trim();
-            if (sigVal) sigs[finalTeamId] = sigVal;
-            else delete sigs[finalTeamId];
-            SignatureManager.saveTeamSignatures(sigs);
-          }
-
-          editingTeamId = null;
-          saveConfig();
-          renderPanel();
-        });
-
-        // --- GSE Search Logic ---
-        const gseSearchInput = container.querySelector('#smax-team-gse-search');
-        const gseResultsEl = container.querySelector('#smax-team-gse-results');
-
-        const addGseResult = (id, name) => {
-          const list = container.querySelector('#smax-gse-list');
-          const tempDiv = document.createElement('div');
-          tempDiv.style.display = 'flex';
-          tempDiv.style.gap = '6px';
-          tempDiv.style.marginBottom = '6px';
-          tempDiv.style.alignItems = 'center';
-          tempDiv.innerHTML = `
-            <input type="hidden" class="smax-gse-id" value="${Utils.escapeHtml(id)}">
-            <input type="text" class="smax-gse-name" value="${Utils.escapeHtml(name)}" disabled style="flex:1;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-surface-2);color:var(--sp-text-muted);opacity:.8;">
-            <button class="smax-gse-del-btn" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
-          `;
-          tempDiv.querySelector('.smax-gse-del-btn').addEventListener('click', (e) => e.target.closest('div').remove());
-          if (list) list.appendChild(tempDiv);
-          gseSearchInput.value = '';
-          gseResultsEl.style.display = 'none';
-        };
-
-        if (gseSearchInput && gseResultsEl) {
-          gseSearchInput.addEventListener('input', () => {
-            const q = gseSearchInput.value.toUpperCase();
-            gseResultsEl.style.display = q ? 'block' : 'none';
-            if (!q) return;
-
-            // Search supportGroupMap from DataRepository
-            // Note: supportGroupMap keys are IDs. Values are objects? 
-            // We need to access the map. DataRepository doesn't expose it directly but has 'getSupportGroupsSnapshot'
-            // Actually currently 'DataRepository.getSupportGroupsSnapshot' returns array.
-            // Let's check getSupportGroupsSnapshot signature.
-            // It returns Array.from(supportGroupMap.values())
-
-            const groups = DataRepository.getSupportGroupsSnapshot();
-            if (!groups.length) {
-              gseResultsEl.innerHTML = '<div style="padding:4px;color:var(--sp-text-muted);font-size:10px;">Carregando GSEs... (clique no HUD para forçar)</div>';
-              DataRepository.ensureSupportGroups(); // Trigger load if needed
-              return;
-            }
-
-            const matches = groups.filter(g => (g.name || '').toUpperCase().includes(q) || (g.id || '').includes(q)).slice(0, 15);
-
-            if (!matches.length) {
-              gseResultsEl.innerHTML = '<div style="padding:4px;color:var(--sp-text-muted);font-size:10px;">Nenhum resultado.</div>';
-            } else {
-              gseResultsEl.innerHTML = matches.map(g => `
-                  <div class="smax-gse-pick" data-id="${g.id}" data-name="${Utils.escapeHtml(g.name)}" style="padding:5px 8px;cursor:pointer;font-size:11px;border-bottom:1px solid var(--sp-border);color:var(--sp-text);">
-                    <div><strong>${Utils.escapeHtml(g.name)}</strong></div>
-                    <div style="color:var(--sp-text-muted);font-size:10px;">ID: ${g.id}</div>
-                  </div>
-               `).join('');
-
-              gseResultsEl.querySelectorAll('.smax-gse-pick').forEach(el => {
-                el.addEventListener('click', () => {
-                  addGseResult(el.dataset.id, el.dataset.name);
-                });
-              });
-            }
-          });
-          gseSearchInput.addEventListener('blur', () => setTimeout(() => { gseResultsEl.style.display = 'none'; }, 200));
-          gseSearchInput.addEventListener('focus', () => DataRepository.ensureSupportGroups());
-        }
-
-        // Existing deletes for initial render
-        container.querySelectorAll('.smax-gse-del-btn').forEach(b => b.addEventListener('click', e => e.target.closest('div').remove()));
-
-        // --- Matcher Logic (location + text scopes) ---
-        const wireMatcherInput = (inputId, btnId, listId, scope) => {
-          const input = container.querySelector(`#${inputId}`);
-          const btn   = container.querySelector(`#${btnId}`);
-          const list  = container.querySelector(`#${listId}`);
-          if (!input || !btn || !list) return;
-
-          const addRow = () => {
-            const text = input.value.trim();
-            if (!text) return;
-            const escapedPattern = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const row = document.createElement('div');
-            row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;background:var(--sp-surface-2);border:1px solid var(--sp-border);padding:6px 8px;border-radius:8px;';
-            row.innerHTML = `
-              <input type="hidden" class="smax-matcher-pattern" value="${Utils.escapeHtml(escapedPattern)}">
-              <input type="hidden" class="smax-matcher-scope" value="${Utils.escapeHtml(scope)}">
-              <span style="flex:1;font-size:11px;color:var(--sp-text-muted);">contém: <strong style="color:var(--sp-text);">${Utils.escapeHtml(text)}</strong></span>
-              <button class="smax-matcher-del-btn" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>`;
-            row.querySelector('.smax-matcher-del-btn').addEventListener('click', () => row.remove());
-            list.appendChild(row);
-            input.value = '';
-          };
-
-          btn.addEventListener('click', addRow);
-          input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addRow(); } });
-        };
-
-        wireMatcherInput('smax-team-location-input', 'smax-add-location-matcher-btn', 'smax-matchers-list-location', 'location');
-        wireMatcherInput('smax-team-text-input',     'smax-add-text-matcher-btn',     'smax-matchers-list-text',     'text');
-
-        // Delete buttons for rows rendered on load
-        container.querySelectorAll('.smax-matcher-del-btn').forEach(b => b.addEventListener('click', () => b.closest('div').remove()));
-
-        // --- Person Search Logic (Existing) ---
-        const searchInput = container.querySelector('#smax-team-person-search');
-        const resultsEl = container.querySelector('#smax-team-person-results');
-
-        const addWorkerResult = (name) => {
-          const list = container.querySelector('#smax-workers-list');
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = `
-            <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;background:var(--sp-surface-2);border:1px solid var(--sp-border);padding:8px;border-radius:8px;">
-              <input type="text" class="smax-worker-name" value="${Utils.escapeHtml(name)}" style="flex:1;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Nome do Responsável">
-              <input type="text" class="smax-worker-digits" value="" style="width:80px;font-size:11px;padding:6px;border:1px solid var(--sp-border);border-radius:6px;background:var(--sp-input-bg);color:var(--sp-text);" placeholder="Digitos (ex: 0-9)">
-              <div class="smax-worker-absent-wrapper" style="display:flex;align-items:center;cursor:pointer;user-select:none;">
-                <input type="checkbox" class="smax-worker-absent" style="display:none;">
-                <div class="smax-absent-fake" style="width:14px;height:14px;border:1px solid var(--sp-border);margin-right:4px;background:transparent;border-radius:2px;display:flex;align-items:center;justify-content:center;"></div>
-                <span style="font-size:10px;color:var(--sp-danger-text);">Ausente</span>
-              </div>
-              <button class="smax-remove-temp-row" style="color:var(--sp-danger-text);border:1px solid var(--sp-danger-border);background:var(--sp-danger-bg);padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
-            </div>`;
-          const row = tempDiv.firstElementChild;
-          row.querySelector('.smax-remove-temp-row').addEventListener('click', () => row.remove());
-
-          // Custom toggle logic
-          const wrapper = row.querySelector('.smax-worker-absent-wrapper');
-          const chk = row.querySelector('.smax-worker-absent');
-          const fake = row.querySelector('.smax-absent-fake');
-
-          wrapper.addEventListener('click', () => {
-            chk.checked = !chk.checked;
-            fake.style.background = chk.checked ? 'var(--sp-danger)' : 'transparent';
-            fake.style.borderColor = chk.checked ? 'var(--sp-danger)' : 'var(--sp-border)';
-          });
-          if (list) list.appendChild(tempDiv.firstElementChild);
-          // Clear search
-          searchInput.value = '';
-          resultsEl.style.display = 'none';
-        };
-
-        if (searchInput && resultsEl) {
-          const attachPickHandlers = () => {
-            resultsEl.querySelectorAll('.smax-person-pick').forEach(el => {
-              el.addEventListener('click', () => {
-                const name = el.getAttribute('data-name');
-                if (name) addWorkerResult(name);
-              });
-            });
-          };
-
-          const renderSearchResults = (term) => {
-            const q = (term || '').trim().toUpperCase();
-            resultsEl.style.display = q ? 'block' : 'none';
-            if (!q) return;
-
-            if (!DataRepository.peopleCache.size) {
-              resultsEl.innerHTML = '<div style="padding:4px;color:var(--sp-text-muted);font-size:10px;">Carregando...</div>';
-              return;
-            }
-
-            const matches = [];
-            for (const p of DataRepository.peopleCache.values()) {
-              const name = (p.name || '').toUpperCase();
-              const upn = (p.upn || '').toUpperCase();
-              if (name.includes(q) || upn.includes(q)) {
-                matches.push(p);
-                if (matches.length >= 20) break;
-              }
-            }
-
-            if (!matches.length) {
-              resultsEl.innerHTML = '<div style="padding:4px;color:var(--sp-text-muted);font-size:10px;">Nenhum resultado.</div>';
-            } else {
-              resultsEl.innerHTML = matches.map(p => `
-                   <div class="smax-person-pick" data-name="${Utils.escapeHtml(p.name)}" style="padding:5px 8px;cursor:pointer;font-size:11px;border-bottom:1px solid var(--sp-border);color:var(--sp-text);">
-                     <strong>${p.name}</strong> ${p.upn ? `<span style="color:var(--sp-text-muted);font-size:10px;">(${p.upn})</span>` : ''}
-                   </div>
-                 `).join('');
-              attachPickHandlers();
-            }
-          };
-
-          searchInput.addEventListener('input', () => renderSearchResults(searchInput.value));
-          searchInput.addEventListener('focus', () => renderSearchResults(searchInput.value));
-          // Hide on blur delayed to allow click
-          searchInput.addEventListener('blur', () => setTimeout(() => { resultsEl.style.display = 'none'; }, 200));
-        }
-
-        // Existing deletes
-        container.querySelectorAll('.smax-worker-del-btn').forEach(b => b.addEventListener('click', e => e.target.closest('div').remove()));
-      }
+      // Nenhum evento de edição — seção é read-only
     };
 
-    // Shareable config keys (no personal identity — meant for team distribution)
+    // Config keys exportáveis (sem teams — gerenciados pelo ADM)
     const CONFIG_KEYS = [
       'nameGroups', 'ausentes', 'enableRealWrites',
-      'defaultGlobalChangeId', 'personalFinalsRaw', 'teamsConfigRaw'
+      'defaultGlobalChangeId'
     ];
 
     const buildConfigJSON = () => {
       const obj = {};
       CONFIG_KEYS.forEach(key => {
         if (prefs[key] === undefined) return;
-        if (key === 'teamsConfigRaw') {
-          try { obj.teams = JSON.parse(prefs[key]); } catch { obj.teams = prefs[key]; }
-        } else {
-          obj[key] = prefs[key];
-        }
+        obj[key] = prefs[key];
       });
       obj._version = '1.0';
       return JSON.stringify(obj, null, 2);
@@ -3975,18 +3517,13 @@
       if (typeof parsed !== 'object' || parsed === null) return { ok: false, msg: 'O JSON deve ser um objeto.' };
       let count = 0;
       CONFIG_KEYS.forEach(key => {
-        if (key === 'teamsConfigRaw' && parsed.teams !== undefined) {
-          prefs.teamsConfigRaw = typeof parsed.teams === 'string' ? parsed.teams : JSON.stringify(parsed.teams);
-          count++;
-        } else if (parsed[key] !== undefined) {
+        if (parsed[key] !== undefined) {
           prefs[key] = parsed[key];
           count++;
         }
       });
       if (!count) return { ok: false, msg: 'Nenhuma chave de configuração reconhecida.' };
       savePrefs();
-      TeamsConfig.reload();
-      reloadConfig();
       return { ok: true, msg: `${count} configurações aplicadas. ✓` };
     };
 
@@ -4016,10 +3553,8 @@
             return onStatus(`Erro ao buscar arquivo: ${e.message}`, false);
           }
 
-          // Monta novo conteúdo
+          // Monta novo conteúdo (sem teams — gerenciados pelo ADM)
           const existing = SharedConfig.get() || {};
-          let teams = [];
-          try { teams = JSON.parse(prefs.teamsConfigRaw); } catch {}
           const newData = {
             _version: ((existing._version || 0) * 1 + 1),
             _updatedAt: new Date().toISOString().split('T')[0],
@@ -4028,7 +3563,7 @@
             ausentes: prefs.ausentes || [],
             enableRealWrites: prefs.enableRealWrites,
             defaultGlobalChangeId: prefs.defaultGlobalChangeId || '',
-            teams,
+            teams: existing.teams || [],
             scripts: existing.scripts || { sol: [], disc: [] },
           };
           const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));
