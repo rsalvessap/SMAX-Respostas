@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.12
+// @version      1.13
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.12';
+  const SMAX_TOOLKIT_VERSION = '1.13';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -1158,10 +1158,11 @@
           const name = attr.name.toLowerCase();
           if (/^on/i.test(name)) { node.removeAttribute(attr.name); return; }
           if (name === 'style') { node.removeAttribute(attr.name); return; }
-          // Block javascript: / data: / vbscript: in href/src/action
+          // Block javascript: / vbscript: and dangerous data: URIs (allow data:image/*)
           if (['href', 'src', 'action', 'xlink:href', 'formaction'].includes(name)) {
             const val = (attr.value || '').replace(/[\s\u0000-\u001F]+/g, '').toLowerCase();
-            if (/^(javascript|data|vbscript)\s*:/i.test(val)) { node.removeAttribute(attr.name); }
+            if (/^(javascript|vbscript)\s*:/i.test(val)) { node.removeAttribute(attr.name); return; }
+            if (/^data\s*:/i.test(val) && !/^data\s*:\s*image\//i.test(val)) { node.removeAttribute(attr.name); }
           }
         });
       });
@@ -1239,12 +1240,14 @@
       tmp.innerHTML = html;
       // Remove tags Office-specific e elementos invisíveis
       tmp.querySelectorAll('o\\:p, xml, style, meta, link, title, head').forEach(el => el.remove());
-      // Remove atributos class e style de TODOS os elementos (limpeza de paste Office/web)
+      // Remove atributos class e style de TODOS os elementos, EXCETO <img> (preserva src/style de imagens)
       tmp.querySelectorAll('*').forEach(el => {
         el.removeAttribute('class');
-        el.removeAttribute('style');
         el.removeAttribute('data-mce-style');
         el.removeAttribute('data-mce-fragment');
+        if (el.tagName.toLowerCase() !== 'img') {
+          el.removeAttribute('style');
+        }
       });
       // Converte <div> e <p> em conteúdo + <br> (layout flat, compatível com SMAX)
       const flattenBlocks = (container) => {
@@ -1259,8 +1262,22 @@
         });
       };
       flattenBlocks(tmp);
+      // Aplica formatação padrão em imagens (mesmo estilo do "Formatar Texto e Imagens")
+      tmp.querySelectorAll('img').forEach(img => {
+        img.style.border = '4px solid #004b8d';
+        img.style.borderRadius = '4px';
+        img.style.boxSizing = 'border-box';
+        img.style.padding = '0';
+        img.style.marginTop = '10px';
+        img.style.marginBottom = '10px';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.outline = 'none';
+        img.style.boxShadow = 'none';
+      });
       // Colapsa múltiplos <br> consecutivos em no máximo 2
       let result = tmp.innerHTML
+        .replace(/&nbsp;/gi, ' ')
         .replace(/(<br\s*\/?\s*>){3,}/gi, '<br><br>')
         .replace(/^(<br\s*\/?\s*>)+/i, '')
         .replace(/(<br\s*\/?\s*>)+$/i, '')
