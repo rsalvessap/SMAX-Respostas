@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.7
+// @version      1.8
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -33,7 +33,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.7';
+  const SMAX_TOOLKIT_VERSION = '1.8';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -769,6 +769,10 @@
 #smax-disc-modal-nav { display:flex; gap:4px; flex-shrink:0; margin-top:2px; }
 #smax-disc-modal-nav button { padding:3px 10px; border-radius:var(--sp-r-sm); border:1px solid var(--sp-border); background:var(--sp-surface-2); color:var(--sp-text); font-size:14px; cursor:pointer; line-height:1; }
 #smax-disc-modal-nav button:disabled { opacity:.3; cursor:default; }
+#smax-disc-modal-zoom { display:flex; gap:4px; flex-shrink:0; margin-top:2px; align-items:center; }
+#smax-disc-modal-zoom button { padding:3px 8px; border-radius:var(--sp-r-sm); border:1px solid var(--sp-border); background:var(--sp-surface-2); color:var(--sp-text); font-size:12px; font-weight:700; cursor:pointer; line-height:1; min-width:26px; }
+#smax-disc-modal-zoom button:hover { border-color:var(--sp-accent); color:var(--sp-accent); }
+#smax-disc-modal-zoom-label { font-size:10px; color:var(--sp-text-muted); min-width:28px; text-align:center; }
 #smax-disc-modal-close { flex-shrink:0; border:1px solid var(--sp-border); background:var(--sp-surface-2); color:var(--sp-text); font-size:14px; width:28px; height:28px; border-radius:var(--sp-r-sm); cursor:pointer; margin-top:1px; }
 #smax-disc-modal-body { flex:1; overflow-y:auto; padding:16px 20px; color:var(--sp-text); line-height:1.65; font-size:13px; }
 #smax-disc-modal-body p { margin:0 0 8px; }
@@ -7586,6 +7590,11 @@
                 <button id="smax-disc-modal-prev" title="Discussão anterior">←</button>
                 <button id="smax-disc-modal-next" title="Próxima discussão">→</button>
               </div>
+              <div id="smax-disc-modal-zoom">
+                <button id="smax-disc-modal-zoom-out" title="Diminuir fonte">A−</button>
+                <span id="smax-disc-modal-zoom-label">13px</span>
+                <button id="smax-disc-modal-zoom-in" title="Aumentar fonte">A+</button>
+              </div>
               <button id="smax-disc-modal-close" title="Fechar">✕</button>
             </div>
             <div id="smax-disc-modal-body"></div>
@@ -8124,6 +8133,21 @@
       backdrop.querySelector('#smax-disc-modal-replicate')?.addEventListener('click', function() {
         const disc = currentDiscussions[discModalIdx];
         if (disc) replicateDiscussion(disc, this);
+      });
+
+      // Zoom de fonte nas discussões expandidas
+      let discFontSize = 13;
+      const discBody = backdrop.querySelector('#smax-disc-modal-body');
+      const discZoomLabel = backdrop.querySelector('#smax-disc-modal-zoom-label');
+      const updateDiscZoom = () => {
+        if (discBody) discBody.style.fontSize = discFontSize + 'px';
+        if (discZoomLabel) discZoomLabel.textContent = discFontSize + 'px';
+      };
+      backdrop.querySelector('#smax-disc-modal-zoom-in')?.addEventListener('click', () => {
+        if (discFontSize < 28) { discFontSize += 2; updateDiscZoom(); }
+      });
+      backdrop.querySelector('#smax-disc-modal-zoom-out')?.addEventListener('click', () => {
+        if (discFontSize > 9) { discFontSize -= 2; updateDiscZoom(); }
       });
 
       // Relatório de atividades
