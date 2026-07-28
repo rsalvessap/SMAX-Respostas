@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.13
+// @version      1.14
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.13';
+  const SMAX_TOOLKIT_VERSION = '1.14';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -4035,6 +4035,8 @@
           const existing = SharedConfig.get() || {};
           let teams = [];
           try { teams = JSON.parse(prefs.teamsConfigRaw); } catch {}
+          let teamSigs = {};
+          try { teamSigs = JSON.parse(prefs.teamSignaturesRaw || '{}'); } catch {}
           const newData = {
             _version: ((existing._version || 0) * 1 + 1),
             _updatedAt: new Date().toISOString().split('T')[0],
@@ -4044,6 +4046,8 @@
             enableRealWrites: prefs.enableRealWrites,
             defaultGlobalChangeId: prefs.defaultGlobalChangeId || '',
             teams,
+            teamSignatures: teamSigs,
+            ackMessageTemplate: prefs.ackMessageTemplate || '',
             scripts: existing.scripts || { sol: [], disc: [] },
           };
           const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));

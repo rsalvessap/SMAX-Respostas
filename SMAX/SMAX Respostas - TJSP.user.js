@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.5
+// @version      1.6
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -13,7 +13,6 @@
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @connect      raw.githubusercontent.com
-// @connect      api.github.com
 // @connect      rlcbmrjkojopipiwpktf.supabase.co
 // @noframes
 // @downloadURL  https://github.com/rsalvessap/SMAX-Respostas/raw/refs/heads/master/SMAX/SMAX%20Respostas%20-%20TJSP.user.js
@@ -34,7 +33,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.5';
+  const SMAX_TOOLKIT_VERSION = '1.6';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -3551,104 +3550,28 @@
     };
 
     // Config keys exportáveis (sem teams — gerenciados pelo ADM)
-    const CONFIG_KEYS = [
-      'nameGroups', 'ausentes', 'enableRealWrites',
-      'defaultGlobalChangeId'
-    ];
-
-    const buildConfigJSON = () => {
-      const obj = {};
-      CONFIG_KEYS.forEach(key => {
-        if (prefs[key] === undefined) return;
-        obj[key] = prefs[key];
-      });
-      obj._version = '1.0';
-      return JSON.stringify(obj, null, 2);
-    };
-
-    const applyConfigJSON = (raw) => {
-      let parsed;
-      try { parsed = JSON.parse(raw); }
-      catch (err) { return { ok: false, msg: `JSON inválido: ${err.message}` }; }
-      if (typeof parsed !== 'object' || parsed === null) return { ok: false, msg: 'O JSON deve ser um objeto.' };
-      let count = 0;
-      CONFIG_KEYS.forEach(key => {
-        if (parsed[key] !== undefined) {
-          prefs[key] = parsed[key];
-          count++;
-        }
-      });
-      if (!count) return { ok: false, msg: 'Nenhuma chave de configuração reconhecida.' };
-      savePrefs();
-      return { ok: true, msg: `${count} configurações aplicadas. ✓` };
-    };
-
-    const publishConfigToGit = (onStatus) => {
-      const token  = (prefs.githubToken || '').trim();
-      const rawUrl = (prefs.sharedConfigUrl || '').trim();
-      if (!token)  return onStatus('Configure o Token do GitHub primeiro.', false);
-      if (!rawUrl) return onStatus('URL do shared-config não configurada.', false);
-
-      const m = rawUrl.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
-      if (!m) return onStatus('URL deve ser raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}.', false);
-      const [, owner, repo, branch, filePath] = m;
-      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-      const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' };
-
-      onStatus('Buscando arquivo atual no GitHub...', null);
-
-      // Busca SHA atual do arquivo
-      GM_xmlhttpRequest({
-        method: 'GET', url: `${apiUrl}?ref=${branch}`, headers,
-        onload: (res) => {
-          let sha = '';
-          try {
-            if (res.status !== 200) throw new Error(`HTTP ${res.status}`);
-            sha = JSON.parse(res.responseText).sha;
-          } catch (e) {
-            return onStatus(`Erro ao buscar arquivo: ${e.message}`, false);
-          }
-
-          // Monta novo conteúdo (sem teams — gerenciados pelo ADM)
-          const existing = SharedConfig.get() || {};
-          const newData = {
-            _version: ((existing._version || 0) * 1 + 1),
-            _updatedAt: new Date().toISOString().split('T')[0],
-            _description: existing._description || 'Configuração compartilhada SMAX Toolkit TJSP.',
-            nameGroups: prefs.nameGroups || {},
-            ausentes: prefs.ausentes || [],
-            enableRealWrites: prefs.enableRealWrites,
-            defaultGlobalChangeId: prefs.defaultGlobalChangeId || '',
-            teams: existing.teams || [],
-            scripts: existing.scripts || { sol: [], disc: [] },
-          };
-          const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));
-
-          onStatus('Publicando no GitHub...', null);
-          GM_xmlhttpRequest({
-            method: 'PUT', url: apiUrl, headers,
-            data: JSON.stringify({ message: `chore: atualiza shared-config SMAX Toolkit v${newData._version}`, content, sha, branch }),
-            onload: (r) => {
-              if (r.status === 200 || r.status === 201) {
-                onStatus(`✓ Publicado! v${newData._version} — todos receberão na próxima sincronização.`, true);
-                SharedConfig.refresh(true);
-              } else {
-                let detail = '';
-                try { detail = JSON.parse(r.responseText).message || ''; } catch {}
-                onStatus(`Erro HTTP ${r.status}${detail ? ': ' + detail : ''}.`, false);
-              }
-            },
-            onerror: () => onStatus('Erro de rede ao publicar.', false),
-          });
-        },
-        onerror: () => onStatus('Erro de rede ao buscar arquivo.', false),
-      });
-    };
-
     /* ── Section content renderers ── */
 
     const renderSectionGeral = () => {
       const triadorName = prefs.myPersonName || '';
+      const sharedData = SharedConfig.get();
+      const ackMsg = Utils.escapeHtml(prefs.ackMessageTemplate || '(não definida)');
+      const ausentesStr = (prefs.ausentes || []).length ? prefs.ausentes.join(', ') : '(nenhum)';
+      let teamSigsHtml = '';
+      try {
+        const sigs = JSON.parse(prefs.teamSignaturesRaw || '{}');
+        const entries = Object.entries(sigs).filter(([, v]) => v);
+        if (entries.length) {
+          teamSigsHtml = entries.map(([tid, html]) => `
+            <div style="margin-bottom:8px;">
+              <div style="font-weight:600;font-size:11px;color:var(--sp-primary);margin-bottom:4px;">Equipe ${Utils.escapeHtml(tid)}</div>
+              <div style="padding:8px 10px;border-radius:6px;background:var(--sp-surface);border:1px solid var(--sp-border);font-size:12px;line-height:1.5;">${html}</div>
+            </div>`).join('');
+        } else {
+          teamSigsHtml = '<div class="smax-sp-muted" style="font-size:12px;">(nenhuma assinatura de equipe configurada)</div>';
+        }
+      } catch { teamSigsHtml = '<div class="smax-sp-muted" style="font-size:12px;">(nenhuma)</div>'; }
+
       return `
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="smax-sp-card">
@@ -3678,51 +3601,30 @@
           </div>
         </div>
         <div class="smax-sp-card">
-          <div class="smax-sp-section-title">☁️ Config. Compartilhada</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="smax-sp-section-title" style="margin:0;">☁️ Configurações da Equipe</div>
+            <button type="button" id="smax-shared-refresh-btn" style="padding:6px 14px;border:1px solid var(--sp-border);border-radius:7px;background:var(--sp-surface-2);color:var(--sp-text);font-size:11px;cursor:pointer;">↺ Sincronizar</button>
+          </div>
           <div class="smax-sp-muted" style="margin-bottom:10px;">
-            Equipes e scripts carregados de um arquivo JSON público (GitHub). Todos os usuários que apontarem para a mesma URL recebem as mesmas configurações automaticamente.
+            Configurações recebidas automaticamente do administrador. Sincronização a cada 1 hora.
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-            <input type="text" id="smax-shared-url-input" value="${Utils.escapeHtml(prefs.sharedConfigUrl || '')}"
-              placeholder="https://raw.githubusercontent.com/..."
-              style="flex:1;min-width:200px;padding:7px 10px;border-radius:7px;font-size:11px;box-sizing:border-box;">
-            <button type="button" id="smax-shared-save-btn" style="padding:7px 14px;border:none;border-radius:7px;background:var(--sp-primary);color:var(--sp-on-accent);font-size:12px;font-weight:600;cursor:pointer;">Salvar</button>
-            <button type="button" id="smax-shared-refresh-btn" style="padding:7px 14px;border:1px solid var(--sp-border);border-radius:7px;background:var(--sp-surface-2);color:var(--sp-text);font-size:11px;cursor:pointer;">↺ Atualizar</button>
-          </div>
-          <div id="smax-shared-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;"></div>
-        </div>
-        <div class="smax-sp-card">
-          <div class="smax-sp-section-title">📨 Mensagem de Recebimento</div>
-          <div class="smax-sp-muted" style="margin-bottom:10px;">Texto enviado como discussão pública ao clicar em "Recebimento". Cada linha vira um parágrafo.</div>
-          <textarea id="smax-ack-template-textarea" spellcheck="false"
-            style="width:100%;min-height:100px;max-height:200px;resize:vertical;padding:10px 12px;border-radius:8px;font-size:13px;font-family:'Segoe UI',system-ui,sans-serif;line-height:1.5;box-sizing:border-box;">${Utils.escapeHtml(prefs.ackMessageTemplate || '')}</textarea>
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button type="button" id="smax-ack-template-save-btn" style="padding:7px 14px;border:none;border-radius:7px;background:var(--sp-primary);color:var(--sp-on-accent);font-size:12px;font-weight:600;cursor:pointer;">Salvar</button>
-            <button type="button" id="smax-ack-template-reset-btn" style="padding:7px 14px;border:1px solid var(--sp-border);border-radius:7px;background:var(--sp-surface-2);color:var(--sp-text);font-size:11px;cursor:pointer;">↺ Restaurar padrão</button>
-          </div>
-          <div id="smax-ack-template-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin-top:6px;"></div>
-        </div>
-        <div class="smax-sp-card">
-          <div class="smax-sp-section-title">🔧 Exportar / Importar Configuração</div>
-          <div class="smax-sp-muted" style="margin-bottom:10px;">JSON com todas as configurações, incluindo equipes. Copie para compartilhar ou cole para restaurar.</div>
-          <textarea id="smax-config-io-textarea" spellcheck="false"
-            style="width:100%;min-height:180px;max-height:320px;resize:vertical;padding:10px 12px;border-radius:8px;font-size:11px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;line-height:1.5;box-sizing:border-box;transition:border-color .15s ease;"></textarea>
-          <div id="smax-config-io-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin:8px 0;"></div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <button type="button" id="smax-config-copy-btn" style="padding:8px 14px;border-radius:8px;border:1px solid var(--sp-border);background:var(--sp-surface);color:var(--sp-text);font-size:12px;cursor:pointer;">📋 Copiar</button>
-            <button type="button" id="smax-config-save-btn" style="padding:8px 14px;border-radius:8px;border:none;background:var(--sp-primary);color:var(--sp-on-accent);font-size:12px;cursor:pointer;font-weight:600;">💾 Salvar localmente</button>
-          </div>
-          <div style="border-top:1px solid var(--sp-border);margin-top:14px;padding-top:14px;">
-            <div class="smax-sp-section-title" style="font-size:12px;margin-bottom:4px;">🚀 Publicar para a equipe (Git)</div>
-            <div class="smax-sp-muted" style="margin-bottom:8px;">Salva a config diretamente no GitHub. Todos os usuários recebem automaticamente na próxima sincronização.</div>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
-              <input type="password" id="smax-github-token-input" placeholder="ghp_••••••••••••••••••••••••"
-                value="${Utils.escapeHtml(prefs.githubToken || '')}"
-                style="flex:1;min-width:180px;padding:7px 10px;border-radius:7px;font-size:11px;box-sizing:border-box;border:1px solid var(--sp-border);background:var(--sp-surface);color:var(--sp-text);">
-              <button type="button" id="smax-github-token-save-btn" style="padding:7px 14px;border:none;border-radius:7px;background:var(--sp-surface-2);color:var(--sp-text);font-size:11px;border:1px solid var(--sp-border);cursor:pointer;white-space:nowrap;">Salvar token</button>
+          <div id="smax-shared-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin-bottom:14px;"></div>
+
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div style="font-weight:600;font-size:12px;color:var(--sp-text);margin-bottom:4px;">📋 Ausentes</div>
+              <div style="padding:8px 10px;border-radius:6px;background:var(--sp-surface);border:1px solid var(--sp-border);font-size:12px;color:var(--sp-text-muted);">${Utils.escapeHtml(ausentesStr)}</div>
             </div>
-            <button type="button" id="smax-config-publish-btn" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--sp-primary);color:var(--sp-on-accent);font-size:12px;font-weight:600;cursor:pointer;">🚀 Publicar para a equipe</button>
-            <div id="smax-config-publish-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin-top:8px;"></div>
+
+            <div>
+              <div style="font-weight:600;font-size:12px;color:var(--sp-text);margin-bottom:4px;">📨 Mensagem de Recebimento</div>
+              <div style="padding:8px 10px;border-radius:6px;background:var(--sp-surface);border:1px solid var(--sp-border);font-size:12px;white-space:pre-line;line-height:1.5;color:var(--sp-text-muted);">${ackMsg}</div>
+            </div>
+
+            <div>
+              <div style="font-weight:600;font-size:12px;color:var(--sp-text);margin-bottom:4px;">✒️ Assinaturas de Equipe</div>
+              ${teamSigsHtml}
+            </div>
           </div>
         </div>`;
     };
@@ -4059,82 +3961,11 @@
       };
       showSharedStatus();
 
-      container.querySelector('#smax-shared-save-btn')?.addEventListener('click', () => {
-        const urlInput = container.querySelector('#smax-shared-url-input');
-        const newUrl = (urlInput?.value || '').trim();
-        prefs.sharedConfigUrl = newUrl;
-        savePrefs();
-        if (sharedStatusEl) sharedStatusEl.textContent = 'URL salva. Clique em Atualizar para buscar.';
-      });
-
       container.querySelector('#smax-shared-refresh-btn')?.addEventListener('click', async () => {
-        const urlInput = container.querySelector('#smax-shared-url-input');
-        const newUrl = (urlInput?.value || '').trim();
-        if (newUrl) { prefs.sharedConfigUrl = newUrl; savePrefs(); }
-        if (sharedStatusEl) sharedStatusEl.textContent = '⏳ Buscando...';
+        if (sharedStatusEl) sharedStatusEl.textContent = '⏳ Sincronizando...';
         await SharedConfig.refresh(true);
         showSharedStatus();
-      });
-
-      // Ack template
-      const ackTextarea = container.querySelector('#smax-ack-template-textarea');
-      const ackStatusEl = container.querySelector('#smax-ack-template-status');
-      container.querySelector('#smax-ack-template-save-btn')?.addEventListener('click', () => {
-        prefs.ackMessageTemplate = ackTextarea?.value || '';
-        savePrefs();
-        if (ackStatusEl) ackStatusEl.textContent = 'Template salvo.';
-      });
-      container.querySelector('#smax-ack-template-reset-btn')?.addEventListener('click', () => {
-        const def = PrefStore.defaults.ackMessageTemplate;
-        if (ackTextarea) ackTextarea.value = def;
-        prefs.ackMessageTemplate = def;
-        savePrefs();
-        if (ackStatusEl) ackStatusEl.textContent = 'Restaurado ao padrão.';
-      });
-
-      // Exportar / Importar Configuração JSON
-      const cfgTextarea   = container.querySelector('#smax-config-io-textarea');
-      const cfgStatusEl   = container.querySelector('#smax-config-io-status');
-      const cfgCopyBtn    = container.querySelector('#smax-config-copy-btn');
-      const cfgSaveBtn    = container.querySelector('#smax-config-save-btn');
-      const pubBtn        = container.querySelector('#smax-config-publish-btn');
-      const pubStatusEl   = container.querySelector('#smax-config-publish-status');
-      const tokenInput    = container.querySelector('#smax-github-token-input');
-      const tokenSaveBtn  = container.querySelector('#smax-github-token-save-btn');
-      if (cfgTextarea) cfgTextarea.value = buildConfigJSON();
-      const setCfgStatus = (msg, color) => {
-        if (cfgStatusEl) { cfgStatusEl.textContent = msg; cfgStatusEl.style.color = color || 'var(--sp-text-muted)'; }
-      };
-      const setPubStatus = (msg, ok) => {
-        if (pubStatusEl) { pubStatusEl.textContent = msg; pubStatusEl.style.color = ok === true ? '#4ade80' : ok === false ? '#fca5a5' : 'var(--sp-text-muted)'; }
-      };
-      tokenSaveBtn?.addEventListener('click', () => {
-        prefs.githubToken = (tokenInput?.value || '').trim();
-        savePrefs();
-        setPubStatus('Token salvo. ✓', true);
-      });
-      pubBtn?.addEventListener('click', () => {
-        if (pubBtn.disabled) return;
-        pubBtn.disabled = true;
-        const origLabel = pubBtn.textContent;
-        pubBtn.textContent = '⏳ Publicando...';
-        publishConfigToGit((msg, ok) => {
-          setPubStatus(msg, ok);
-          if (ok !== null) { pubBtn.disabled = false; pubBtn.textContent = origLabel; }
-        });
-      });
-      cfgCopyBtn?.addEventListener('click', () => {
-        if (!cfgTextarea?.value.trim()) return;
-        navigator.clipboard.writeText(cfgTextarea.value)
-          .then(() => setCfgStatus('Copiado! ✓', '#4ade80'))
-          .catch(() => { cfgTextarea.select(); document.execCommand('copy'); setCfgStatus('Copiado! ✓', '#4ade80'); });
-      });
-      cfgSaveBtn?.addEventListener('click', () => {
-        const raw = (cfgTextarea?.value || '').trim();
-        if (!raw) { setCfgStatus('O campo está vazio.', '#fca5a5'); return; }
-        const result = applyConfigJSON(raw);
-        setCfgStatus(result.msg, result.ok ? '#4ade80' : '#fca5a5');
-        if (result.ok) setTimeout(() => renderPanel(), 300);
+        setTimeout(() => renderPanel(), 300);
       });
     };
 
@@ -8757,13 +8588,17 @@
         );
       }
       // Auto-aplica chaves de config compartilhada (exceto dados pessoais e flags de segurança)
-      const SHARED_KEYS = ['nameGroups', 'ausentes', 'defaultGlobalChangeId'];
+      const SHARED_KEYS = ['nameGroups', 'ausentes', 'defaultGlobalChangeId', 'ackMessageTemplate'];
       let sharedApplied = false;
       SHARED_KEYS.forEach(key => {
         if (data[key] !== undefined) { prefs[key] = data[key]; sharedApplied = true; }
       });
       if (data.teams !== undefined) {
         prefs.teamsConfigRaw = typeof data.teams === 'string' ? data.teams : JSON.stringify(data.teams);
+        sharedApplied = true;
+      }
+      if (data.teamSignatures !== undefined && typeof data.teamSignatures === 'object') {
+        prefs.teamSignaturesRaw = JSON.stringify(data.teamSignatures);
         sharedApplied = true;
       }
       if (sharedApplied) { savePrefs(); }
