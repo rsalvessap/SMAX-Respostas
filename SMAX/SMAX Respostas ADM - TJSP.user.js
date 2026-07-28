@@ -4031,13 +4031,14 @@
             return onStatus(`Erro ao buscar arquivo: ${e.message}`, false);
           }
 
-          // Monta novo conteúdo
+          // Monta novo conteúdo — preserva campos de outros scripts (ex: campos do Toolkit)
           const existing = SharedConfig.get() || {};
           let teams = [];
           try { teams = JSON.parse(prefs.teamsConfigRaw); } catch {}
           let teamSigs = {};
           try { teamSigs = JSON.parse(prefs.teamSignaturesRaw || '{}'); } catch {}
           const newData = {
+            ...existing,
             _version: ((existing._version || 0) * 1 + 1),
             _updatedAt: new Date().toISOString().split('T')[0],
             _description: existing._description || 'Configuração compartilhada SMAX Toolkit TJSP.',
