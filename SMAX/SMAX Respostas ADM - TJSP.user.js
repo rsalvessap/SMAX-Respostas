@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.15
+// @version      1.16
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.15';
+  const SMAX_TOOLKIT_VERSION = '1.16';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -8082,6 +8082,9 @@
                     <button id="smax-resp-escalate-btn" class="smax-resp-meta-chip" title="Escalar chamado (Validação → Atendimento)">
                       ⬆️ Escalar
                     </button>
+                    <button id="smax-resp-extract-btn" class="smax-resp-meta-chip" title="Extrair chamado para Markdown (copiar para IA)">
+                      📥 Extrair
+                    </button>
                   </div>
                   <!-- Pickers fixos (posicionados via JS) -->
                   <div id="smax-resp-gse-picker" class="smax-resp-field-picker"></div>
@@ -8567,6 +8570,46 @@
           if (escBtn) escBtn.classList.add('dirty');
         }
         updateSendButton();
+      });
+      // Extrair chamado para Markdown (ADM exclusivo)
+      backdrop.querySelector('#smax-resp-extract-btn')?.addEventListener('click', () => {
+        const id = activeTicketId;
+        if (!id) { setStatusMsg('Selecione um chamado primeiro.', '#fca5a5'); return; }
+        const entry = DataRepository.triageCache.get(String(id));
+        if (!entry) { setStatusMsg('Dados do chamado não disponíveis.', '#fca5a5'); return; }
+
+        const fmtDate = (ts) => {
+          if (!ts) return '—';
+          const d = new Date(ts);
+          return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        };
+
+        let md = `# Chamado #${entry.idText || id}\n\n`;
+        md += `| Campo | Valor |\n|-------|-------|\n`;
+        md += `| Data de abertura | ${fmtDate(entry.createdTs)} |\n`;
+        md += `| Solicitante | ${entry.requestedForName || '—'} |\n`;
+        md += `| Local | ${entry.locationName || '—'} |\n`;
+        md += `\n## Descrição\n\n${(entry.descriptionText || '(sem descrição)').trim()}\n`;
+
+        const discs = (entry.discussions || []).filter(d => !d.systemGenerated);
+        if (discs.length) {
+          md += `\n## Discussões\n`;
+          discs.forEach((d, i) => {
+            const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
+            md += `\n### ${i + 1}. ${d.submitterDisplay || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
+            md += `${(d.bodyText || '').trim()}\n`;
+          });
+        } else {
+          md += `\n## Discussões\n\n(nenhuma discussão)\n`;
+        }
+
+        navigator.clipboard.writeText(md).then(() => {
+          setStatusMsg('📥 Chamado extraído e copiado!', '#4ade80');
+          const btn = backdrop.querySelector('#smax-resp-extract-btn');
+          if (btn) { btn.classList.add('dirty'); setTimeout(() => btn.classList.remove('dirty'), 2000); }
+        }).catch(() => {
+          setStatusMsg('Erro ao copiar para a área de transferência.', '#fca5a5');
+        });
       });
       // Assinatura picker
       backdrop.querySelector('#smax-resp-sig-btn')?.addEventListener('click', openSignaturePicker);
