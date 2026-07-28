@@ -2,7 +2,7 @@
 
 Ferramenta de automacao e atendimento em lote para o sistema SMAX do Tribunal de Justica de Sao Paulo.
 
-**Versao atual:** 1.6
+**Versao atual:** 1.7
 
 ---
 

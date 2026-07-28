@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.6
+// @version      1.7
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -33,7 +33,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.6';
+  const SMAX_TOOLKIT_VERSION = '1.7';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -3481,7 +3481,7 @@
       return `
       <div id="smax-settings-header" style="display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:10px 18px;background:var(--sp-header-bg);border-radius:0;flex-shrink:0;gap:12px;">
         <div style="font-weight:700;font-size:16px;letter-spacing:.03em;color:var(--sp-header-fg);text-shadow:0 2px 8px rgba(0,0,0,.3);white-space:nowrap;">
-          ⚙️ SMAX Toolkit
+          ⚙️ SMAX Respostas
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button id="smax-theme-toggle-btn"
@@ -3556,7 +3556,6 @@
       const triadorName = prefs.myPersonName || '';
       const sharedData = SharedConfig.get();
       const ackMsg = Utils.escapeHtml(prefs.ackMessageTemplate || '(não definida)');
-      const ausentesStr = (prefs.ausentes || []).length ? prefs.ausentes.join(', ') : '(nenhum)';
       let teamSigsHtml = '';
       try {
         const sigs = JSON.parse(prefs.teamSignaturesRaw || '{}');
@@ -3611,11 +3610,6 @@
           <div id="smax-shared-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin-bottom:14px;"></div>
 
           <div style="display:flex;flex-direction:column;gap:12px;">
-            <div>
-              <div style="font-weight:600;font-size:12px;color:var(--sp-text);margin-bottom:4px;">📋 Ausentes</div>
-              <div style="padding:8px 10px;border-radius:6px;background:var(--sp-surface);border:1px solid var(--sp-border);font-size:12px;color:var(--sp-text-muted);">${Utils.escapeHtml(ausentesStr)}</div>
-            </div>
-
             <div>
               <div style="font-weight:600;font-size:12px;color:var(--sp-text);margin-bottom:4px;">📨 Mensagem de Recebimento</div>
               <div style="padding:8px 10px;border-radius:6px;background:var(--sp-surface);border:1px solid var(--sp-border);font-size:12px;white-space:pre-line;line-height:1.5;color:var(--sp-text-muted);">${ackMsg}</div>
@@ -8628,7 +8622,8 @@
               saveCache(data);
               const now = new Date();
               const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-              statusText = `✓ v${data._version || '1'} — ${hm}`;
+              const pubDate = data._updatedAt ? ` | publicado em ${data._updatedAt}` : '';
+              statusText = `✓ v${data._version || '1'} — sincronizado às ${hm}${pubDate}`;
               console.log('[SMAX SharedConfig] carregado:', data._version, '| equipes:', (data.teams||[]).length, '| scripts sol:', (data.scripts?.sol||[]).length);
               applyToModules();
               resolve(data);
@@ -8655,7 +8650,8 @@
         } else {
           const d = new Date(fetchedAt);
           const hm = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-          statusText = `✓ v${data._version || '1'} — cache de ${hm}`;
+          const pubDate = data._updatedAt ? ` | publicado em ${data._updatedAt}` : '';
+          statusText = `✓ v${data._version || '1'} — cache de ${hm}${pubDate}`;
         }
       }
       refresh();                  // atualiza em segundo plano (sem await)

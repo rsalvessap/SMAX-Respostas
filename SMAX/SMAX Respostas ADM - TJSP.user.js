@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.14
+// @version      1.15
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.14';
+  const SMAX_TOOLKIT_VERSION = '1.15';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -3499,7 +3499,7 @@
       return `
       <div id="smax-settings-header" style="display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:10px 18px;background:var(--sp-header-bg);border-radius:0;flex-shrink:0;gap:12px;">
         <div style="font-weight:700;font-size:16px;letter-spacing:.03em;color:var(--sp-header-fg);text-shadow:0 2px 8px rgba(0,0,0,.3);white-space:nowrap;">
-          ⚙️ SMAX Toolkit
+          ⚙️ SMAX Respostas ADM
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button id="smax-theme-toggle-btn"
@@ -9258,7 +9258,8 @@
               saveCache(data);
               const now = new Date();
               const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-              statusText = `✓ v${data._version || '1'} — ${hm}`;
+              const pubDate = data._updatedAt ? ` | publicado em ${data._updatedAt}` : '';
+              statusText = `✓ v${data._version || '1'} — sincronizado às ${hm}${pubDate}`;
               console.log('[SMAX SharedConfig] carregado:', data._version, '| equipes:', (data.teams||[]).length, '| scripts sol:', (data.scripts?.sol||[]).length);
               applyToModules();
               resolve(data);
@@ -9285,7 +9286,8 @@
         } else {
           const d = new Date(fetchedAt);
           const hm = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-          statusText = `✓ v${data._version || '1'} — cache de ${hm}`;
+          const pubDate = data._updatedAt ? ` | publicado em ${data._updatedAt}` : '';
+          statusText = `✓ v${data._version || '1'} — cache de ${hm}${pubDate}`;
         }
       }
       refresh();                  // atualiza em segundo plano (sem await)
