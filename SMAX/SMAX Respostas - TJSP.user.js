@@ -3575,6 +3575,29 @@
         }
       } catch { teamSigsHtml = '<div class="smax-sp-muted" style="font-size:12px;">(nenhuma)</div>'; }
 
+      // Monta resumo detalhado das configurações importadas
+      const importLog = SharedConfig.getImportLog();
+      let importDetailsHtml = '';
+      if (importLog.length) {
+        importDetailsHtml = `
+          <div style="margin-top:10px;border:1px solid var(--sp-border);border-radius:8px;overflow:hidden;">
+            <div style="padding:8px 10px;background:var(--sp-surface-2);font-weight:600;font-size:11px;color:var(--sp-primary);border-bottom:1px solid var(--sp-border);">
+              Detalhes da importação (${importLog.length} item/itens)
+            </div>
+            <div style="display:flex;flex-direction:column;">
+              ${importLog.map(l => `
+                <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-bottom:1px solid var(--sp-border);font-size:11px;">
+                  <span style="flex-shrink:0;width:16px;text-align:center;">${l.ok ? '✓' : '—'}</span>
+                  <span style="font-weight:600;color:var(--sp-text);min-width:120px;flex-shrink:0;">${Utils.escapeHtml(l.key)}</span>
+                  <span style="color:var(--sp-text-muted);word-break:break-word;">${Utils.escapeHtml(l.detail)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      } else if (sharedData) {
+        importDetailsHtml = '<div style="margin-top:10px;font-size:11px;color:var(--sp-text-dim);">Nenhuma configuração importada nesta sessão.</div>';
+      }
+
       return `
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="smax-sp-card">
@@ -3611,8 +3634,10 @@
           <div class="smax-sp-muted" style="margin-bottom:10px;">
             Configurações recebidas automaticamente do administrador. Sincronização a cada 1 hora.
           </div>
-          <div id="smax-shared-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin-bottom:14px;"></div>
-
+          <div id="smax-shared-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin-bottom:4px;"></div>
+          ${importDetailsHtml}
+        </div>
+        <div class="smax-sp-card">
           <div style="display:flex;flex-direction:column;gap:12px;">
             <div>
               <div style="font-weight:600;font-size:12px;color:var(--sp-text);margin-bottom:4px;">📨 Mensagem de Recebimento</div>
@@ -3961,9 +3986,13 @@
 
       container.querySelector('#smax-shared-refresh-btn')?.addEventListener('click', async () => {
         if (sharedStatusEl) sharedStatusEl.textContent = '⏳ Sincronizando...';
-        await SharedConfig.refresh(true);
+        const result = await SharedConfig.refresh(true);
         showSharedStatus();
-        setTimeout(() => renderPanel(), 300);
+        if (!result) {
+          if (sharedStatusEl) sharedStatusEl.textContent += ' (nenhum dado recebido — verifique a URL)';
+        }
+        // Re-renderiza para mostrar detalhes da importação
+        setTimeout(() => { reloadConfig(); renderPanel(); }, 200);
       });
     };
 
@@ -8575,6 +8604,7 @@
     let fetchedAt = 0;
     let statusText = '';
     let isLoading = false;
+    let _lastImportLog = []; // detalhes da última importação
 
     const loadCache = () => {
       try {
@@ -8595,31 +8625,77 @@
 
     const applyToModules = () => {
       if (!data) return;
-      if (Array.isArray(data.teams)) {
+      const log = [];
+
+      // --- Equipes ---
+      if (Array.isArray(data.teams) && data.teams.length) {
         TeamsConfig.setSharedTeams(data.teams);
         _listeners.forEach(fn => { try { fn(data.teams); } catch {} });
+        log.push({ key: 'Equipes', detail: `${data.teams.length} equipe(s): ${data.teams.map(t => t.name || t.id).join(', ')}`, ok: true });
+      } else if (data.teams !== undefined) {
+        log.push({ key: 'Equipes', detail: 'recebido mas vazio', ok: false });
       }
+
+      // --- Scripts ---
       if (data.scripts) {
-        Templates.setSharedScripts(
-          Array.isArray(data.scripts.sol)  ? data.scripts.sol  : [],
-          Array.isArray(data.scripts.disc) ? data.scripts.disc : []
-        );
+        const solArr  = Array.isArray(data.scripts.sol)  ? data.scripts.sol  : [];
+        const discArr = Array.isArray(data.scripts.disc) ? data.scripts.disc : [];
+        Templates.setSharedScripts(solArr, discArr);
+        log.push({ key: 'Scripts', detail: `${solArr.length} solução, ${discArr.length} discussão`, ok: solArr.length > 0 || discArr.length > 0 });
       }
-      // Auto-aplica chaves de config compartilhada (exceto dados pessoais e flags de segurança)
+
+      // --- Chaves de config compartilhada ---
       const SHARED_KEYS = ['nameGroups', 'ausentes', 'defaultGlobalChangeId', 'ackMessageTemplate'];
       let sharedApplied = false;
+
       SHARED_KEYS.forEach(key => {
-        if (data[key] !== undefined) { prefs[key] = data[key]; sharedApplied = true; }
+        if (data[key] !== undefined) {
+          prefs[key] = data[key];
+          sharedApplied = true;
+
+          if (key === 'nameGroups') {
+            const groups = typeof data[key] === 'object' && data[key] ? data[key] : {};
+            const count = Object.keys(groups).length;
+            const totalPeople = Object.values(groups).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
+            log.push({ key: 'Grupos de nomes', detail: `${count} grupo(s), ${totalPeople} pessoa(s)`, ok: count > 0 });
+          } else if (key === 'ausentes') {
+            const arr = Array.isArray(data[key]) ? data[key] : [];
+            log.push({ key: 'Ausentes', detail: arr.length ? arr.join(', ') : '(nenhum)', ok: true });
+          } else if (key === 'defaultGlobalChangeId') {
+            log.push({ key: 'ID Global padrão', detail: data[key] || '(vazio)', ok: !!data[key] });
+          } else if (key === 'ackMessageTemplate') {
+            const tpl = data[key] || '';
+            log.push({ key: 'Msg. recebimento', detail: tpl ? `"${tpl.substring(0, 60)}${tpl.length > 60 ? '…' : ''}"` : '(vazia)', ok: !!tpl });
+          }
+        }
       });
+
+      // --- Teams → teamsConfigRaw ---
       if (data.teams !== undefined) {
         prefs.teamsConfigRaw = typeof data.teams === 'string' ? data.teams : JSON.stringify(data.teams);
         sharedApplied = true;
       }
+
+      // --- Assinaturas de equipe ---
       if (data.teamSignatures !== undefined && typeof data.teamSignatures === 'object') {
         prefs.teamSignaturesRaw = JSON.stringify(data.teamSignatures);
         sharedApplied = true;
+        const sigEntries = Object.entries(data.teamSignatures).filter(([, v]) => v);
+        log.push({ key: 'Assinaturas de equipe', detail: `${sigEntries.length} equipe(s): ${sigEntries.map(([k]) => k).join(', ') || '(nenhuma)'}`, ok: sigEntries.length > 0 });
       }
+
       if (sharedApplied) { savePrefs(); }
+
+      _lastImportLog = log;
+
+      // Log detalhado no console
+      if (log.length) {
+        console.group('[SMAX SharedConfig] Configurações importadas (v' + (data._version || '?') + ')');
+        log.forEach(l => console.log(`  ${l.ok ? '✓' : '—'} ${l.key}: ${l.detail}`));
+        console.groupEnd();
+      } else {
+        console.log('[SMAX SharedConfig] Nenhuma configuração importada.');
+      }
     };
 
     const refresh = (force = false) => {
@@ -8695,8 +8771,9 @@
 
     const getStatus = () => ({ text: statusText, loading: isLoading, fetchedAt });
     const get = () => data;
+    const getImportLog = () => _lastImportLog;
 
-    return { init, refresh, get, getStatus, getScripts, onTeamsLoaded };
+    return { init, refresh, get, getStatus, getScripts, onTeamsLoaded, getImportLog };
   })();
 
   /* =========================================================

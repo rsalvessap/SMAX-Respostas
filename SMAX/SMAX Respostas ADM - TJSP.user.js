@@ -3970,7 +3970,8 @@
     // Shareable config keys (no personal identity — meant for team distribution)
     const CONFIG_KEYS = [
       'nameGroups', 'ausentes', 'enableRealWrites',
-      'defaultGlobalChangeId', 'teamsConfigRaw'
+      'defaultGlobalChangeId', 'teamsConfigRaw',
+      'teamSignaturesRaw', 'ackMessageTemplate'
     ];
 
     const buildConfigJSON = () => {
@@ -3979,6 +3980,8 @@
         if (prefs[key] === undefined) return;
         if (key === 'teamsConfigRaw') {
           try { obj.teams = JSON.parse(prefs[key]); } catch { obj.teams = prefs[key]; }
+        } else if (key === 'teamSignaturesRaw') {
+          try { obj.teamSignatures = JSON.parse(prefs[key]); } catch { obj.teamSignatures = prefs[key]; }
         } else {
           obj[key] = prefs[key];
         }
@@ -3993,20 +3996,41 @@
       catch (err) { return { ok: false, msg: `JSON inválido: ${err.message}` }; }
       if (typeof parsed !== 'object' || parsed === null) return { ok: false, msg: 'O JSON deve ser um objeto.' };
       let count = 0;
+      const details = [];
       CONFIG_KEYS.forEach(key => {
         if (key === 'teamsConfigRaw' && parsed.teams !== undefined) {
           prefs.teamsConfigRaw = typeof parsed.teams === 'string' ? parsed.teams : JSON.stringify(parsed.teams);
+          const teams = Array.isArray(parsed.teams) ? parsed.teams : [];
+          details.push(`Equipes: ${teams.length} (${teams.map(t => t.name || t.id).join(', ')})`);
+          count++;
+        } else if (key === 'teamSignaturesRaw' && parsed.teamSignatures !== undefined) {
+          prefs.teamSignaturesRaw = typeof parsed.teamSignatures === 'string' ? parsed.teamSignatures : JSON.stringify(parsed.teamSignatures);
+          const sigCount = typeof parsed.teamSignatures === 'object' ? Object.keys(parsed.teamSignatures).length : 0;
+          details.push(`Assinaturas de equipe: ${sigCount} equipe(s)`);
           count++;
         } else if (parsed[key] !== undefined) {
           prefs[key] = parsed[key];
           count++;
+          if (key === 'nameGroups') {
+            const n = typeof parsed[key] === 'object' ? Object.keys(parsed[key]).length : 0;
+            details.push(`Grupos de nomes: ${n} grupo(s)`);
+          } else if (key === 'ausentes') {
+            const arr = Array.isArray(parsed[key]) ? parsed[key] : [];
+            details.push(`Ausentes: ${arr.length} (${arr.join(', ') || 'nenhum'})`);
+          } else if (key === 'ackMessageTemplate') {
+            details.push(`Msg. recebimento: "${(parsed[key] || '').substring(0, 40)}${(parsed[key] || '').length > 40 ? '…' : ''}"`);
+          } else if (key === 'defaultGlobalChangeId') {
+            details.push(`ID Global: ${parsed[key] || '(vazio)'}`);
+          } else if (key === 'enableRealWrites') {
+            details.push(`Gravação real: ${parsed[key] ? 'SIM' : 'NÃO'}`);
+          }
         }
       });
       if (!count) return { ok: false, msg: 'Nenhuma chave de configuração reconhecida.' };
       savePrefs();
       TeamsConfig.reload();
       reloadConfig();
-      return { ok: true, msg: `${count} configurações aplicadas. ✓` };
+      return { ok: true, msg: `${count} configurações aplicadas. ✓\n${details.join('\n')}` };
     };
 
     const publishConfigToGit = (onStatus) => {
@@ -4140,7 +4164,7 @@
           <div class="smax-sp-muted" style="margin-bottom:10px;">JSON com todas as configurações, incluindo equipes. Copie para compartilhar ou cole para restaurar.</div>
           <textarea id="smax-config-io-textarea" spellcheck="false"
             style="width:100%;min-height:180px;max-height:320px;resize:vertical;padding:10px 12px;border-radius:8px;font-size:11px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;line-height:1.5;box-sizing:border-box;transition:border-color .15s ease;"></textarea>
-          <div id="smax-config-io-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin:8px 0;"></div>
+          <div id="smax-config-io-status" style="font-size:11px;color:var(--sp-text-muted);min-height:16px;margin:8px 0;white-space:pre-line;"></div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <button type="button" id="smax-config-copy-btn" style="padding:8px 14px;border-radius:8px;border:1px solid var(--sp-border);background:var(--sp-surface);color:var(--sp-text);font-size:12px;cursor:pointer;">📋 Copiar</button>
             <button type="button" id="smax-config-save-btn" style="padding:8px 14px;border-radius:8px;border:none;background:var(--sp-primary);color:var(--sp-on-accent);font-size:12px;cursor:pointer;font-weight:600;">💾 Salvar localmente</button>
@@ -9278,27 +9302,75 @@
 
     const applyToModules = () => {
       if (!data) return;
-      if (Array.isArray(data.teams)) {
+      const log = [];
+
+      // --- Equipes ---
+      if (Array.isArray(data.teams) && data.teams.length) {
         TeamsConfig.setSharedTeams(data.teams);
         _listeners.forEach(fn => { try { fn(data.teams); } catch {} });
+        log.push({ key: 'Equipes', detail: `${data.teams.length} equipe(s): ${data.teams.map(t => t.name || t.id).join(', ')}`, ok: true });
+      } else if (data.teams !== undefined) {
+        log.push({ key: 'Equipes', detail: 'recebido mas vazio', ok: false });
       }
+
+      // --- Scripts ---
       if (data.scripts) {
-        Templates.setSharedScripts(
-          Array.isArray(data.scripts.sol)  ? data.scripts.sol  : [],
-          Array.isArray(data.scripts.disc) ? data.scripts.disc : []
-        );
+        const solArr  = Array.isArray(data.scripts.sol)  ? data.scripts.sol  : [];
+        const discArr = Array.isArray(data.scripts.disc) ? data.scripts.disc : [];
+        Templates.setSharedScripts(solArr, discArr);
+        log.push({ key: 'Scripts', detail: `${solArr.length} solução, ${discArr.length} discussão`, ok: solArr.length > 0 || discArr.length > 0 });
       }
-      // Auto-aplica chaves de config compartilhada (exceto dados pessoais e flags de segurança)
-      const SHARED_KEYS = ['nameGroups', 'ausentes', 'defaultGlobalChangeId'];
+
+      // --- Chaves de config compartilhada ---
+      const SHARED_KEYS = ['nameGroups', 'ausentes', 'defaultGlobalChangeId', 'ackMessageTemplate'];
       let sharedApplied = false;
+
       SHARED_KEYS.forEach(key => {
-        if (data[key] !== undefined) { prefs[key] = data[key]; sharedApplied = true; }
+        if (data[key] !== undefined) {
+          prefs[key] = data[key];
+          sharedApplied = true;
+
+          if (key === 'nameGroups') {
+            const groups = typeof data[key] === 'object' && data[key] ? data[key] : {};
+            const count = Object.keys(groups).length;
+            const totalPeople = Object.values(groups).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
+            log.push({ key: 'Grupos de nomes', detail: `${count} grupo(s), ${totalPeople} pessoa(s)`, ok: count > 0 });
+          } else if (key === 'ausentes') {
+            const arr = Array.isArray(data[key]) ? data[key] : [];
+            log.push({ key: 'Ausentes', detail: arr.length ? arr.join(', ') : '(nenhum)', ok: true });
+          } else if (key === 'defaultGlobalChangeId') {
+            log.push({ key: 'ID Global padrão', detail: data[key] || '(vazio)', ok: !!data[key] });
+          } else if (key === 'ackMessageTemplate') {
+            const tpl = data[key] || '';
+            log.push({ key: 'Msg. recebimento', detail: tpl ? `"${tpl.substring(0, 60)}${tpl.length > 60 ? '…' : ''}"` : '(vazia)', ok: !!tpl });
+          }
+        }
       });
+
+      // --- Teams → teamsConfigRaw ---
       if (data.teams !== undefined) {
         prefs.teamsConfigRaw = typeof data.teams === 'string' ? data.teams : JSON.stringify(data.teams);
         sharedApplied = true;
       }
+
+      // --- Assinaturas de equipe ---
+      if (data.teamSignatures !== undefined && typeof data.teamSignatures === 'object') {
+        prefs.teamSignaturesRaw = JSON.stringify(data.teamSignatures);
+        sharedApplied = true;
+        const sigEntries = Object.entries(data.teamSignatures).filter(([, v]) => v);
+        log.push({ key: 'Assinaturas de equipe', detail: `${sigEntries.length} equipe(s): ${sigEntries.map(([k]) => k).join(', ') || '(nenhuma)'}`, ok: sigEntries.length > 0 });
+      }
+
       if (sharedApplied) { savePrefs(); }
+
+      // Log detalhado no console
+      if (log.length) {
+        console.group('[SMAX SharedConfig ADM] Configurações importadas (v' + (data._version || '?') + ')');
+        log.forEach(l => console.log(`  ${l.ok ? '✓' : '—'} ${l.key}: ${l.detail}`));
+        console.groupEnd();
+      } else {
+        console.log('[SMAX SharedConfig ADM] Nenhuma configuração importada.');
+      }
     };
 
     const refresh = (force = false) => {
