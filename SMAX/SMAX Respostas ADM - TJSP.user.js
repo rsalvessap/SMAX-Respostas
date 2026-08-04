@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.20
+// @version      1.21
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.20';
+  const SMAX_TOOLKIT_VERSION = '1.21';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -803,6 +803,47 @@
 #smax-resp-script-count { font-size:12px; color:var(--sp-text-muted); }
 #smax-resp-script-use-btn { padding:8px 24px; border:none; border-radius:var(--sp-r-md); background:var(--sp-accent); color:var(--sp-on-accent); font-size:13px; font-weight:700; cursor:pointer; transition:opacity .12s; }
 #smax-resp-script-use-btn:disabled { opacity:.4; cursor:default; }
+
+/* Script picker — enhanced filter bar & grid cards */
+#smax-resp-script-filter-bar { padding:8px 12px; border-bottom:1px solid var(--sp-border); flex-shrink:0; background:var(--sp-surface-2); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#smax-resp-script-search-wrap { padding:0; border-bottom:none; flex:1; min-width:160px; position:relative; background:transparent; }
+#smax-resp-script-search-wrap svg { position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--sp-text-muted); pointer-events:none; }
+#smax-resp-script-search-inp { width:100%; box-sizing:border-box; background:var(--sp-input-bg); border:1px solid var(--sp-border); border-radius:var(--sp-r-sm); padding:6px 10px 6px 30px; color:var(--sp-text); font-size:13px; outline:none; }
+#smax-resp-script-search-inp:focus { border-color:var(--sp-accent); box-shadow:0 0 0 3px var(--sp-ring); }
+.smax-sp-team-chips { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+.smax-sp-chip { padding:4px 11px; border-radius:20px; border:1.5px solid var(--sp-border); background:var(--sp-surface); color:var(--sp-text-muted); font-size:11.5px; font-weight:500; cursor:pointer; transition:all .13s; white-space:nowrap; font-family:inherit; }
+.smax-sp-chip:hover { border-color:var(--sp-accent); color:var(--sp-accent); }
+.smax-sp-chip.on { background:var(--sp-accent); color:#fff; border-color:var(--sp-accent); }
+.smax-sp-chip[data-team="local"].on { background:#64748b; border-color:#64748b; }
+.smax-sp-chip[data-team="compartilhado"].on { background:#10b981; border-color:#10b981; }
+.smax-sp-chip[data-team="remoto"].on { background:#f59e0b; border-color:#f59e0b; }
+.smax-sp-subjects-wrap { position:relative; }
+.smax-sp-subjects-btn { padding:4px 11px; border-radius:20px; border:1.5px solid var(--sp-border); background:var(--sp-surface); color:var(--sp-text-muted); font-size:11.5px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:4px; transition:all .13s; font-family:inherit; white-space:nowrap; }
+.smax-sp-subjects-btn:hover { border-color:var(--sp-accent); color:var(--sp-accent); }
+.smax-sp-subjects-btn.active { border-color:var(--sp-accent); color:var(--sp-accent); background:var(--sp-primary-bg); }
+.smax-sp-subjects-btn-count { background:var(--sp-accent); color:#fff; font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:10px; display:none; line-height:1.5; }
+.smax-sp-subjects-btn-count.vis { display:inline; }
+.smax-sp-subject-panel { position:absolute; top:calc(100% + 5px); right:0; background:var(--sp-surface); border:1px solid var(--sp-border); border-radius:var(--sp-r-md); padding:5px; min-width:190px; max-height:260px; overflow-y:auto; box-shadow:var(--sp-shadow); z-index:200; display:none; }
+.smax-sp-subject-panel.open { display:block; }
+.smax-sp-subject-item { display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:5px; cursor:pointer; font-size:12.5px; color:var(--sp-text-muted); transition:background .1s; user-select:none; }
+.smax-sp-subject-item:hover { background:var(--sp-primary-bg); }
+.smax-sp-subject-item input { accent-color:var(--sp-accent); cursor:pointer; }
+.smax-sp-count-pill { display:flex; align-items:baseline; gap:2px; padding:3px 10px; border:1px solid var(--sp-border); border-radius:20px; background:var(--sp-surface); flex-shrink:0; white-space:nowrap; }
+.smax-sp-count-n { font-size:14px; font-weight:800; color:var(--sp-accent); font-variant-numeric:tabular-nums; }
+.smax-sp-count-sep { font-size:10px; color:var(--sp-text-muted); margin:0 2px; }
+.smax-sp-count-tot { font-size:10px; color:var(--sp-text-muted); font-variant-numeric:tabular-nums; }
+/* Grid layout for list column */
+#smax-resp-script-list-col.grid-view { display:grid; grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:8px; padding:10px; overflow-y:auto; align-content:start; width:55%; flex-shrink:0; }
+.smax-sp-script-card { background:var(--sp-surface); border:1.5px solid var(--sp-border); border-radius:var(--sp-r-md); padding:10px 12px 10px 14px; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:3px; }
+.smax-sp-script-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--smax-stripe,var(--sp-accent)); border-radius:var(--sp-r-md) 0 0 var(--sp-r-md); }
+.smax-sp-script-card:hover { border-color:var(--smax-stripe,var(--sp-accent)); background:var(--sp-primary-bg); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+.smax-sp-script-card.selected { border-color:var(--sp-accent); background:var(--sp-primary-bg); box-shadow:0 0 0 3px var(--sp-ring); }
+.smax-sp-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }
+.smax-sp-card-badge { font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:10px; color:#fff; white-space:nowrap; }
+.smax-sp-card-title { font-size:12px; font-weight:600; color:var(--sp-text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.smax-sp-card-preview { font-size:11px; color:var(--sp-text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.smax-sp-script-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:2px; }
+.smax-sp-script-tag { font-size:9.5px; padding:2px 5px; border-radius:4px; background:var(--sp-border); color:var(--sp-text-muted); }
 
 /* ============================================================
    BATCH CONFIRM
@@ -6684,6 +6725,13 @@
       return [...local, ...remote];
     };
 
+    // Team color map for script source badges
+    const SMAX_SP_SOURCE_COLORS = {
+      local:          '#64748b',
+      compartilhado:  '#10b981',
+      remoto:         '#f59e0b',
+    };
+
     const openScriptPicker = async () => {
       const modal = backdrop?.querySelector('#smax-resp-script-modal');
       if (!modal) return;
@@ -6693,72 +6741,231 @@
 
       modal.dataset.open = 'true';
 
-      const listCol      = modal.querySelector('#smax-resp-script-list-col');
-      const previewCol   = modal.querySelector('#smax-resp-script-preview-col');
-      const searchInp    = modal.querySelector('#smax-resp-script-search-inp');
-      const countEl      = modal.querySelector('#smax-resp-script-count');
-      const useBtn       = modal.querySelector('#smax-resp-script-use-btn');
-      const closeBtn     = modal.querySelector('#smax-resp-script-modal-close');
+      const listCol       = modal.querySelector('#smax-resp-script-list-col');
+      const previewCol    = modal.querySelector('#smax-resp-script-preview-col');
+      const searchInp     = modal.querySelector('#smax-resp-script-search-inp');
+      const countEl       = modal.querySelector('#smax-resp-script-count');
+      const useBtn        = modal.querySelector('#smax-resp-script-use-btn');
+      const closeBtn      = modal.querySelector('#smax-resp-script-modal-close');
+      const teamChipsCont = modal.querySelector('#smax-resp-sp-team-chips');
+      const subjectBtn    = modal.querySelector('#smax-resp-sp-subjects-btn');
+      const subjectPanel  = modal.querySelector('#smax-resp-sp-subject-panel');
+      const subjectCnt    = modal.querySelector('#smax-resp-sp-subjects-cnt');
+      const countN        = modal.querySelector('#smax-resp-sp-count-n');
+      const countSep      = modal.querySelector('#smax-resp-sp-count-sep');
+      const countTot      = modal.querySelector('#smax-resp-sp-count-tot');
 
-      let selectedScript = null;
-      let allScripts     = [];
+      let selectedScript   = null;
+      let allScripts       = [];
+      let activeSource     = 'todos'; // chip filter
+      let activeSubjects   = new Set(); // subject checkbox filter
+      let allSubjects      = [];
+
+      // Derive source label for a script
+      const getSource = (s) => s._local ? 'local' : s._shared ? 'compartilhado' : 'remoto';
+
+      // Extract a simple "subject" tag from script name
+      const extractSubject = (nome) => {
+        if (!nome) return null;
+        const separators = ['. ', ' — ', ' - ', ' – '];
+        for (const sep of separators) {
+          const idx = nome.indexOf(sep);
+          if (idx > 1) return nome.slice(0, idx).trim();
+        }
+        // Fallback: first word(s) up to 20 chars
+        const firstWord = nome.split(' ')[0];
+        return firstWord.length > 2 ? firstWord : null;
+      };
+
+      // Update count pill
+      const updateCount = (filtered) => {
+        const total = allScripts.length;
+        countN.textContent = filtered.length;
+        if (filtered.length < total) {
+          countSep.style.display = '';
+          countTot.style.display = '';
+          countTot.textContent = total;
+        } else {
+          countSep.style.display = 'none';
+          countTot.style.display = 'none';
+        }
+        // Keep legacy countEl hidden but set for compat
+        if (countEl) countEl.textContent = filtered.length < total
+          ? `${filtered.length} de ${total}`
+          : `${total} scripts`;
+      };
 
       const selectScript = (s) => {
         selectedScript = s;
         useBtn.disabled = false;
-        previewCol.innerHTML = Utils.sanitizeRichText(s.conteudo_bruto) || '<em>Sem conteúdo.</em>';
+        previewCol.innerHTML = '';
+        // Preview header
+        const src = getSource(s);
+        const stripeColor = SMAX_SP_SOURCE_COLORS[src] || 'var(--sp-accent)';
+        const previewHdr = document.createElement('div');
+        previewHdr.style.cssText = 'margin-bottom:12px;';
+        previewHdr.innerHTML = `
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+            <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:10px;color:#fff;background:${stripeColor};">${Utils.escapeHtml(src)}</span>
+          </div>
+          <div style="font-size:14px;font-weight:700;color:var(--sp-text);line-height:1.4;margin-bottom:8px;">${Utils.escapeHtml(s.nome || '')}</div>
+          <div style="height:1px;background:var(--sp-border);margin-bottom:12px;"></div>
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--sp-text-muted);margin-bottom:6px;">Conteúdo</div>`;
+        previewCol.appendChild(previewHdr);
+        const previewBody = document.createElement('div');
+        previewBody.innerHTML = Utils.sanitizeRichText(s.conteudo_bruto) || '<em>Sem conteúdo.</em>';
+        previewCol.appendChild(previewBody);
+
+        listCol.querySelectorAll('.smax-sp-script-card').forEach(r => {
+          r.classList.toggle('selected', r.dataset.idx === String(allScripts.indexOf(s)));
+        });
+        // Legacy rows compat (for disc picker sharing the modal)
         listCol.querySelectorAll('.smax-resp-script-row').forEach(r => {
           r.classList.toggle('selected', r.dataset.idx === String(allScripts.indexOf(s)));
         });
       };
 
       const renderList = (filtered) => {
+        listCol.classList.add('grid-view');
         if (!filtered.length) {
-          listCol.innerHTML = '<div style="padding:16px;color:var(--sp-text-muted);font-size:12px;text-align:center;">Nenhum script encontrado.</div>';
+          listCol.innerHTML = '<div style="grid-column:1/-1;padding:24px;color:var(--sp-text-muted);font-size:12px;text-align:center;">Nenhum script encontrado.</div>';
           return;
         }
-        listCol.innerHTML = filtered.map((s, i) => {
-          const stripped = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-          const badge = s._local
-            ? `<span style="font-size:9px;padding:1px 4px;border-radius:999px;background:var(--sp-primary-bg);color:var(--sp-accent);border:1px solid var(--sp-accent);">local</span>`
-            : s._shared ? `<span style="font-size:9px;padding:1px 4px;border-radius:999px;background:var(--sp-primary-bg);color:var(--sp-accent);border:1px solid var(--sp-accent);">☁️</span>` : '';
+        listCol.innerHTML = filtered.map((s) => {
+          const src = getSource(s);
+          const stripeColor = SMAX_SP_SOURCE_COLORS[src] || 'var(--sp-accent)';
           const origIdx = allScripts.indexOf(s);
-          return `<div class="smax-resp-script-row${selectedScript === s ? ' selected' : ''}" data-idx="${origIdx}">
-            <div class="smax-resp-script-row-title">${Utils.escapeHtml(s.nome)} ${badge}</div>
-            <div class="smax-resp-script-row-preview">${Utils.escapeHtml(stripped.slice(0, 80))}</div>
+          const stripped = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          const subject = extractSubject(s.nome);
+          const isSelected = selectedScript === s;
+          const tagHtml = subject
+            ? `<div class="smax-sp-script-tags"><span class="smax-sp-script-tag">${Utils.escapeHtml(subject)}</span></div>`
+            : '';
+          return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${stripeColor};">
+            <div class="smax-sp-card-top">
+              <span class="smax-sp-card-badge" style="background:${stripeColor};">${Utils.escapeHtml(src)}</span>
+            </div>
+            <div class="smax-sp-card-title">${Utils.escapeHtml(s.nome || '')}</div>
+            <div class="smax-sp-card-preview">${Utils.escapeHtml(stripped.slice(0, 100))}</div>
+            ${tagHtml}
           </div>`;
         }).join('');
-        listCol.querySelectorAll('.smax-resp-script-row').forEach((row, rowI) => {
-          row.addEventListener('click', () => selectScript(filtered[rowI]));
+        listCol.querySelectorAll('.smax-sp-script-card').forEach((card, cardI) => {
+          card.addEventListener('click', () => selectScript(filtered[cardI]));
         });
       };
 
-      const applyFilter = (q) => {
-        if (!q) { countEl.textContent = `${allScripts.length} scripts`; renderList(allScripts); return; }
-        const ql = q.toLowerCase();
-        const filtered = allScripts.filter(s =>
-          (s.nome || '').toLowerCase().includes(ql) ||
-          (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').toLowerCase().includes(ql)
-        );
-        countEl.textContent = `${filtered.length} de ${allScripts.length}`;
+      const getFiltered = () => {
+        const q = searchInp.value.trim().toLowerCase();
+        return allScripts.filter(s => {
+          // Source chip filter
+          if (activeSource !== 'todos' && getSource(s) !== activeSource) return false;
+          // Subject filter
+          if (activeSubjects.size > 0) {
+            const subj = extractSubject(s.nome);
+            if (!subj || !activeSubjects.has(subj)) return false;
+          }
+          // Text search
+          if (q) {
+            const inName = (s.nome || '').toLowerCase().includes(q);
+            const inBody = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').toLowerCase().includes(q);
+            if (!inName && !inBody) return false;
+          }
+          return true;
+        });
+      };
+
+      const applyFilter = () => {
+        const filtered = getFiltered();
+        updateCount(filtered);
         renderList(filtered);
       };
 
+      // Build team/source chips
+      const buildChips = () => {
+        const sources = ['todos', 'local', 'compartilhado', 'remoto'];
+        teamChipsCont.innerHTML = sources.map(src => {
+          const label = src === 'todos' ? 'Todos' : src.charAt(0).toUpperCase() + src.slice(1);
+          return `<button class="smax-sp-chip${activeSource === src ? ' on' : ''}" data-team="${src}" type="button">${Utils.escapeHtml(label)}</button>`;
+        }).join('');
+        teamChipsCont.querySelectorAll('.smax-sp-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            activeSource = chip.dataset.team;
+            teamChipsCont.querySelectorAll('.smax-sp-chip').forEach(c => {
+              c.classList.toggle('on', c.dataset.team === activeSource);
+            });
+            applyFilter();
+          });
+        });
+      };
+
+      // Build subjects dropdown
+      const buildSubjects = () => {
+        const subjectSet = new Set();
+        allScripts.forEach(s => {
+          const subj = extractSubject(s.nome);
+          if (subj) subjectSet.add(subj);
+        });
+        allSubjects = [...subjectSet].sort();
+        if (!allSubjects.length) {
+          subjectBtn.style.display = 'none';
+          return;
+        }
+        subjectBtn.style.display = '';
+        subjectPanel.innerHTML = allSubjects.map(subj => `
+          <label class="smax-sp-subject-item">
+            <input type="checkbox" value="${Utils.escapeHtml(subj)}"${activeSubjects.has(subj) ? ' checked' : ''}>
+            ${Utils.escapeHtml(subj)}
+          </label>`).join('');
+        subjectPanel.querySelectorAll('input[type=checkbox]').forEach(cb => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) activeSubjects.add(cb.value); else activeSubjects.delete(cb.value);
+            const cnt = activeSubjects.size;
+            subjectCnt.textContent = cnt || '';
+            subjectCnt.classList.toggle('vis', cnt > 0);
+            subjectBtn.classList.toggle('active', cnt > 0);
+            applyFilter();
+          });
+        });
+      };
+
+      // Subject dropdown toggle
+      if (subjectBtn._smaxSbHandler) subjectBtn.removeEventListener('click', subjectBtn._smaxSbHandler);
+      subjectBtn._smaxSbHandler = (e) => {
+        e.stopPropagation();
+        subjectPanel.classList.toggle('open');
+        subjectBtn.classList.toggle('active', subjectPanel.classList.contains('open') || activeSubjects.size > 0);
+      };
+      subjectBtn.addEventListener('click', subjectBtn._smaxSbHandler);
+      document.addEventListener('click', (e) => {
+        if (!modal.querySelector('#smax-resp-sp-subjects-wrap')?.contains(e.target)) {
+          subjectPanel.classList.remove('open');
+        }
+      }, { capture: true });
+
       // Load
-      listCol.innerHTML = '<div style="padding:16px;color:var(--sp-text-muted);font-size:12px;">Carregando scripts...</div>';
+      listCol.classList.add('grid-view');
+      listCol.innerHTML = '<div style="grid-column:1/-1;padding:16px;color:var(--sp-text-muted);font-size:12px;">Carregando scripts...</div>';
       previewCol.innerHTML = '<div id="smax-resp-script-preview-empty">Selecione um script para ver o conteúdo.</div>';
       useBtn.disabled = true;
       selectedScript = null;
+      activeSource = 'todos';
+      activeSubjects = new Set();
       searchInp.value = '';
+      subjectCnt.textContent = '';
+      subjectCnt.classList.remove('vis');
+      subjectBtn.classList.remove('active');
 
       allScripts = await loadScripts();
-      countEl.textContent = `${allScripts.length} scripts`;
+      buildChips();
+      buildSubjects();
+      updateCount(allScripts);
       renderList(allScripts);
       searchInp.focus();
 
       // Evita acúmulo de listeners: remove anterior antes de adicionar
       if (searchInp._smaxFilterHandler) searchInp.removeEventListener('input', searchInp._smaxFilterHandler);
-      searchInp._smaxFilterHandler = () => applyFilter(searchInp.value.trim());
+      searchInp._smaxFilterHandler = () => applyFilter();
       searchInp.addEventListener('input', searchInp._smaxFilterHandler);
 
       useBtn.onclick = () => {
@@ -6772,6 +6979,7 @@
 
       const closePicker = () => {
         modal.dataset.open = 'false';
+        subjectPanel.classList.remove('open');
         if (modal._smaxOutsideHandler) { document.removeEventListener('mousedown', modal._smaxOutsideHandler); modal._smaxOutsideHandler = null; }
       };
 
@@ -6793,6 +7001,19 @@
 
       if (modal.dataset.open === 'true') { modal.dataset.open = 'false'; return; }
       modal.dataset.open = 'true';
+
+      // Update title to reflect disc mode
+      const titleEl = modal.querySelector('#smax-resp-script-box-header h4');
+      if (titleEl) titleEl.textContent = '💬 Scripts de Discussão';
+
+      // Reset filter bar UI for disc mode (chips not applicable)
+      const teamChipsContDisc = modal.querySelector('#smax-resp-sp-team-chips');
+      if (teamChipsContDisc) teamChipsContDisc.innerHTML = '';
+      const subjectBtnDisc = modal.querySelector('#smax-resp-sp-subjects-btn');
+      if (subjectBtnDisc) subjectBtnDisc.style.display = 'none';
+      const countNDisc = modal.querySelector('#smax-resp-sp-count-n');
+      const countSepDisc = modal.querySelector('#smax-resp-sp-count-sep');
+      const countTotDisc = modal.querySelector('#smax-resp-sp-count-tot');
 
       const listCol    = modal.querySelector('#smax-resp-script-list-col');
       const previewCol = modal.querySelector('#smax-resp-script-preview-col');
@@ -6834,18 +7055,29 @@
         });
       };
 
+      const updateDiscCount = (filtered) => {
+        const total = allScripts.length;
+        if (countNDisc) {
+          countNDisc.textContent = filtered.length;
+          if (countSepDisc) { countSepDisc.style.display = filtered.length < total ? '' : 'none'; }
+          if (countTotDisc) { countTotDisc.style.display = filtered.length < total ? '' : 'none'; countTotDisc.textContent = total; }
+        }
+        if (countEl) countEl.textContent = filtered.length < total ? `${filtered.length} de ${total}` : `${total} scripts`;
+      };
+
       const applyFilter = (q) => {
-        if (!q) { countEl.textContent = `${allScripts.length} scripts`; renderList(allScripts); return; }
+        if (!q) { updateDiscCount(allScripts); renderList(allScripts); return; }
         const ql = q.toLowerCase();
         const filtered = allScripts.filter(s =>
           (s.title || '').toLowerCase().includes(ql) ||
           (s.html || '').replace(/<[^>]+>/g, ' ').toLowerCase().includes(ql)
         );
-        countEl.textContent = `${filtered.length} de ${allScripts.length}`;
+        updateDiscCount(filtered);
         renderList(filtered);
       };
 
       // Load
+      listCol.classList.remove('grid-view'); // disc picker uses legacy list rows, not grid cards
       listCol.innerHTML = '<div style="padding:16px;color:var(--sp-text-muted);font-size:12px;">Carregando scripts de discussão...</div>';
       previewCol.innerHTML = '<div id="smax-resp-script-preview-empty">Selecione um script para ver o conteúdo.</div>';
       useBtn.disabled = true;
@@ -6853,7 +7085,7 @@
       searchInp.value = '';
 
       allScripts = Templates.loadAll(true);
-      countEl.textContent = `${allScripts.length} scripts`;
+      updateDiscCount(allScripts);
       renderList(allScripts);
       searchInp.focus();
 
@@ -6881,6 +7113,9 @@
 
       const closePicker = () => {
         modal.dataset.open = 'false';
+        // Restore title and subjects button for next openScriptPicker call
+        if (titleEl) titleEl.textContent = '📋 Scripts de Respostas';
+        if (subjectBtnDisc) subjectBtnDisc.style.display = '';
         if (modal._smaxOutsideHandler) { document.removeEventListener('mousedown', modal._smaxOutsideHandler); modal._smaxOutsideHandler = null; }
       };
 
@@ -8266,17 +8501,32 @@
                 <h4>📋 Scripts de Respostas</h4>
                 <button id="smax-resp-script-modal-close" style="border:none;background:var(--sp-header-btn);color:var(--sp-header-fg);font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer;flex-shrink:0;">✕</button>
               </div>
-              <div id="smax-resp-script-search-wrap">
-                <input id="smax-resp-script-search-inp" type="text" placeholder="Buscar por título ou conteúdo..." autocomplete="off">
+              <div id="smax-resp-script-filter-bar">
+                <div id="smax-resp-script-search-wrap">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input id="smax-resp-script-search-inp" type="text" placeholder="Buscar por título ou conteúdo..." autocomplete="off">
+                </div>
+                <div class="smax-sp-team-chips" id="smax-resp-sp-team-chips"></div>
+                <div class="smax-sp-subjects-wrap" id="smax-resp-sp-subjects-wrap">
+                  <button class="smax-sp-subjects-btn" id="smax-resp-sp-subjects-btn" type="button">
+                    Assuntos <span class="smax-sp-subjects-btn-count" id="smax-resp-sp-subjects-cnt"></span> ▾
+                  </button>
+                  <div class="smax-sp-subject-panel" id="smax-resp-sp-subject-panel"></div>
+                </div>
+                <div class="smax-sp-count-pill" id="smax-resp-sp-count-pill">
+                  <span class="smax-sp-count-n" id="smax-resp-sp-count-n">0</span>
+                  <span class="smax-sp-count-sep" id="smax-resp-sp-count-sep" style="display:none;">de</span>
+                  <span class="smax-sp-count-tot" id="smax-resp-sp-count-tot" style="display:none;"></span>
+                </div>
               </div>
               <div id="smax-resp-script-split">
-                <div id="smax-resp-script-list-col"></div>
+                <div id="smax-resp-script-list-col" class="grid-view"></div>
                 <div id="smax-resp-script-preview-col">
                   <div id="smax-resp-script-preview-empty">Selecione um script para ver o conteúdo.</div>
                 </div>
               </div>
               <div id="smax-resp-script-box-footer">
-                <span id="smax-resp-script-count"></span>
+                <span id="smax-resp-script-count" style="display:none;"></span>
                 <button id="smax-resp-script-use-btn" disabled>Usar script</button>
               </div>
             </div>
