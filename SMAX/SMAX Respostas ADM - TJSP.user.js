@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.19
+// @version      1.20
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.19';
+  const SMAX_TOOLKIT_VERSION = '1.20';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -5910,6 +5910,18 @@
       const openerEl = backdrop.querySelector('#smax-resp-opener');
       if (openerEl) openerEl.textContent = entry.requestedForName ? `👤 ${entry.requestedForName}` : '';
 
+      // Botão "Dados" do solicitante — mostra apenas quando há ID de pessoa
+      const dataBtn = backdrop.querySelector('#smax-resp-requester-data-btn');
+      if (dataBtn) {
+        if (entry.requestedForPersonId) {
+          dataBtn.style.display = '';
+          dataBtn.dataset.personId = entry.requestedForPersonId;
+          dataBtn.dataset.personName = entry.requestedForName || '';
+        } else {
+          dataBtn.style.display = 'none';
+        }
+      }
+
       // Título/cargo do solicitante — busca no peopleCache pelo ID, fallback ao campo da resposta
       const titleEl = backdrop.querySelector('#smax-resp-requester-title');
       if (titleEl) {
@@ -8087,6 +8099,7 @@
                 <span id="smax-resp-detail-global-badge" style="display:none;flex-shrink:0;"></span>
                 <span id="smax-resp-vip-badge" style="display:none;padding:2px 7px;border-radius:999px;background:#facc15;color:#854d0e;font-size:10px;font-weight:700;flex-shrink:0;">VIP</span>
                 <span id="smax-resp-opener" style="font-size:13px;color:var(--sp-header-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:280px;"></span>
+                <button id="smax-resp-requester-data-btn" type="button" title="Dados completos do solicitante" style="display:none;padding:2px 8px;border-radius:5px;border:1px solid var(--sp-border);background:var(--sp-surface-2);color:var(--sp-header-sub);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Dados</button>
                 <span id="smax-resp-requester-title" style="display:none;font-size:13px;color:var(--sp-header-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:240px;font-style:italic;"></span>
                 <span id="smax-resp-location-label" style="display:none;font-size:13px;color:var(--sp-header-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer;" title="Clique para ver nome completo"></span>
                 <span id="smax-resp-process-label" style="display:none;font-size:12px;color:var(--sp-header-fg);font-family:monospace;font-weight:600;white-space:nowrap;flex-shrink:0;opacity:.92;"></span>
@@ -8319,7 +8332,7 @@
       // Filtros padrão — SEMPRE aplicados ao abrir.
       // O usuário pode alterá-los durante a sessão; ao reabrir, defaults voltam.
       selectedRequestStatuses.add('RequestStatusInProgress');
-      selectedStatuses.add('Aguardando Atendimento');
+      selectedStatuses.add('Em Atendimento');
       if (prefs.myPersonId) selectedAssignees.add(String(prefs.myPersonId));
       // Restaura filtros extras da sessão anterior (complementa os defaults)
       try {
@@ -8384,6 +8397,81 @@
           const removeTip = (ev) => { if (!tip.contains(ev.target)) { tip.remove(); document.removeEventListener('click', removeTip, true); } };
           document.addEventListener('click', removeTip, true);
         }, 0);
+      });
+
+      // Botão "Dados" — popup flutuante com dados completos do solicitante
+      backdrop.querySelector('#smax-resp-requester-data-btn')?.addEventListener('click', async function () {
+        const personId = this.dataset.personId;
+        const personName = this.dataset.personName || '';
+        if (!personId) return;
+
+        // Remove popup anterior se houver
+        backdrop.querySelector('#smax-resp-person-popup')?.remove();
+
+        const popup = document.createElement('div');
+        popup.id = 'smax-resp-person-popup';
+        Object.assign(popup.style, {
+          position: 'fixed', zIndex: '9999999',
+          background: 'var(--sp-elevated)', color: 'var(--sp-text)',
+          border: '1px solid var(--sp-border)', borderRadius: '10px',
+          boxShadow: 'var(--sp-shadow)', padding: '14px 16px',
+          minWidth: '280px', maxWidth: '380px',
+          fontSize: '12px', lineHeight: '1.6',
+        });
+        const rect = this.getBoundingClientRect();
+        popup.style.top = (rect.bottom + 8) + 'px';
+        popup.style.left = Math.min(rect.left, window.innerWidth - 400) + 'px';
+        popup.innerHTML = '<div style="text-align:center;color:var(--sp-text-muted);padding:8px 0;">Carregando dados...</div>';
+        backdrop.appendChild(popup);
+
+        // Fecha ao clicar fora
+        const closePopup = (ev) => { if (!popup.contains(ev.target) && ev.target !== this) { popup.remove(); document.removeEventListener('click', closePopup, true); } };
+        setTimeout(() => document.addEventListener('click', closePopup, true), 0);
+
+        try {
+          // Busca dados completos da pessoa via API
+          const _tid = ApiClient.getTenantId() || SMAX_TENANT_ID;
+          const layout = 'Id,Name,FirstName,LastName,Email,Upn,Phone,CellPhone,Title,EmployeeNumber,Location,OrganizationalGroup,IsVIP,IsSuperAdmin';
+          const url = `/rest/${_tid}/ems/Person/${encodeURIComponent(personId)}?layout=${layout}&TENANTID=${_tid}`;
+          const res = await fetch(url, { credentials: 'include' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const p = data?.entity?.properties || data?.properties || {};
+
+          const row = (label, value) => value ? `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--sp-border);">
+            <span style="font-weight:600;color:var(--sp-text-muted);min-width:90px;flex-shrink:0;">${label}</span>
+            <span style="color:var(--sp-text);word-break:break-word;">${Utils.escapeHtml(String(value))}</span>
+          </div>` : '';
+
+          const name = p.Name || personName;
+          const title = p.Title || '';
+          const empNum = p.EmployeeNumber || '';
+          const email = p.Email || p.Upn || '';
+          const phone = p.Phone || '';
+          const cell = p.CellPhone || '';
+          const location = p.Location || '';
+          const org = p.OrganizationalGroup || '';
+          const isVip = !!p.IsVIP;
+
+          popup.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-weight:700;font-size:14px;color:var(--sp-text);">👤 ${Utils.escapeHtml(name)}</div>
+              ${isVip ? '<span style="padding:2px 7px;border-radius:999px;background:#facc15;color:#854d0e;font-size:10px;font-weight:700;">VIP</span>' : ''}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0;">
+              ${row('Cargo', title)}
+              ${row('Matrícula', empNum)}
+              ${row('E-mail', email)}
+              ${row('Telefone', phone)}
+              ${row('Celular', cell)}
+              ${row('Localização', location)}
+              ${row('Organização', org)}
+            </div>
+            ${!title && !empNum && !email ? '<div style="color:var(--sp-text-muted);text-align:center;padding:6px 0;font-style:italic;">Nenhum dado adicional disponível.</div>' : ''}
+          `;
+        } catch (err) {
+          popup.innerHTML = `<div style="color:var(--sp-danger-text);padding:8px 0;">Erro ao buscar dados: ${Utils.escapeHtml(err.message)}</div>`;
+        }
       });
 
       // Toggle criteria visibility
