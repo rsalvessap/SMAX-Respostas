@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.22
+// @version      1.23
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.22';
+  const SMAX_TOOLKIT_VERSION = '1.23';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -824,7 +824,7 @@
 
 /* Body: main list + preview panel */
 #smax-resp-script-split { flex:1; display:flex; min-height:0; overflow:hidden; }
-#smax-resp-script-list-col { flex:1; overflow-y:auto; background:var(--sp-surface); }
+#smax-resp-script-list-col { flex:1; overflow-y:auto; background:var(--sp-surface); min-height:0; }
 #smax-resp-script-preview-col { width:360px; flex-shrink:0; border-left:1.5px solid var(--sp-border); display:flex; flex-direction:column; background:var(--sp-surface); overflow-y:auto; }
 #smax-resp-script-preview-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--sp-text-muted); gap:10px; padding:24px; font-size:13px; font-style:italic; }
 .smax-sp-pp-content { flex:1; overflow-y:auto; padding:20px; display:none; flex-direction:column; gap:14px; }
@@ -837,17 +837,17 @@
 .smax-sp-pp-solution { font-size:13px; color:var(--sp-text-muted); line-height:1.65; background:var(--sp-surface-2); border:1px solid var(--sp-border); border-radius:8px; padding:13px; white-space:pre-wrap; max-height:300px; overflow-y:auto; }
 
 /* Grid view (default) */
-#smax-resp-script-list-col.view-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; padding:12px; align-content:start; }
-.smax-sp-script-card { background:var(--sp-surface-2); border:1.5px solid var(--sp-border); border-radius:10px; padding:11px 13px 11px 15px; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:4px; }
+#smax-resp-script-list-col.view-grid { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)) !important; gap:10px !important; padding:12px !important; align-content:start !important; overflow-y:auto !important; }
+.smax-sp-script-card { background:var(--sp-surface-2,#1d2839); border:1.5px solid var(--sp-border,#334155); border-radius:10px; padding:12px 14px 12px 16px; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative; min-height:80px; display:flex; flex-direction:column; gap:4px; }
 .smax-sp-script-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--smax-stripe,#94a3b8); border-radius:10px 0 0 10px; }
-.smax-sp-script-card:hover { border-color:var(--smax-stripe,#2563eb); background:var(--sp-primary-bg); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
-.smax-sp-script-card.selected { border-color:#2563eb; background:var(--sp-primary-bg); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
-.smax-sp-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }
-.smax-sp-card-badge { font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:10px; color:#fff; white-space:nowrap; }
-.smax-sp-card-title { font-size:12.5px; font-weight:600; color:var(--sp-text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.smax-sp-card-preview { font-size:11.5px; color:var(--sp-text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.smax-sp-script-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:2px; }
-.smax-sp-script-tag { font-size:10px; padding:2px 5px; border-radius:4px; background:var(--sp-border); color:var(--sp-text-muted); }
+.smax-sp-script-card:hover { border-color:var(--smax-stripe,#2563eb); background:var(--sp-primary-bg,rgba(37,99,235,.1)); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+.smax-sp-script-card.selected { border-color:#2563eb; background:var(--sp-primary-bg,rgba(37,99,235,.1)); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+.smax-sp-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
+.smax-sp-card-badge { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:10px; color:#fff; white-space:nowrap; }
+.smax-sp-card-title { font-size:13px; font-weight:600; color:var(--sp-text,#e4ecf6); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; }
+.smax-sp-card-preview { font-size:11.5px; color:var(--sp-text-muted,#9aa7b8); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:2px; }
+.smax-sp-script-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:3px; }
+.smax-sp-script-tag { font-size:10px; padding:2px 6px; border-radius:4px; background:var(--sp-border,#334155); color:var(--sp-text-muted,#9aa7b8); }
 
 /* Rows view */
 #smax-resp-script-list-col.view-rows { display:flex; flex-direction:column; padding:0; }
@@ -6741,42 +6741,6 @@
       }
     };
 
-    const loadScripts = async () => {
-      // Scripts locais (configurações) são sempre frescos — sem cache
-      const local = Templates.loadAll(false).map(t => ({ nome: t.title, conteudo_bruto: t.html, _local: true, _team: 'Local' }));
-
-      if (!scriptsCache) {
-        try {
-          // Carrega mapa de equipes e scripts em paralelo
-          const eqMapPromise = fetchEquipesMap();
-          // Carrega TODOS os scripts (sem filtro por equipe) para permitir filtragem por equipe na UI
-          const url = `${SMAX_SB_URL}/rest/v1/scripts_customizados?select=id,nome,conteudo_bruto,equipe_id&deletado=eq.false&order=nome`;
-          const resp = await fetch(url, {
-            headers: { apikey: SMAX_SB_KEY, Authorization: `Bearer ${SMAX_SB_KEY}`, 'Accept-Profile': 'public' }
-          });
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          const fromDB = await resp.json();
-          const eqMap = await eqMapPromise;
-
-          // Resolve nome da equipe para cada script
-          for (const s of fromDB) {
-            s._team = (s.equipe_id && eqMap.get(s.equipe_id)) || 'Remoto';
-          }
-
-          const shared = SharedConfig.getScripts(false).map(s => ({ ...s, _team: s._team || 'Compartilhado' }));
-          scriptsCache = [...shared, ...fromDB];
-        } catch (e) {
-          console.warn('[SMAX] ResponseHUD: falha ao carregar scripts:', e);
-          scriptsCache = SharedConfig.getScripts(false).map(s => ({ ...s, _team: s._team || 'Compartilhado' }));
-        }
-      }
-
-      // Mescla: locais primeiro (precedência), depois DB/shared — sem duplicar por nome
-      const seen = new Set(local.map(s => (s.nome || '').trim().toLowerCase()));
-      const remote = scriptsCache.filter(s => !seen.has((s.nome || '').trim().toLowerCase()));
-      return [...local, ...remote];
-    };
-
     // Team color map — cores por equipe (modelo de referência)
     const SMAX_SP_TEAM_COLORS = {
       'SGS 2.2.1': '#3b82f6',   // azul
@@ -6787,22 +6751,65 @@
     const SMAX_SP_DEFAULT_COLOR = '#94a3b8';
     const getTeamColor = (teamName) => SMAX_SP_TEAM_COLORS[teamName] || SMAX_SP_DEFAULT_COLOR;
 
-    // Cache de equipes do Supabase (id → nome)
-    let _sbEquipesMap = null;
-    const fetchEquipesMap = async () => {
-      if (_sbEquipesMap) return _sbEquipesMap;
-      try {
-        const resp = await fetch(`${SMAX_SB_URL}/rest/v1/equipes?select=id,nome`, {
-          headers: { apikey: SMAX_SB_KEY, Authorization: `Bearer ${SMAX_SB_KEY}`, 'Accept-Profile': 'public' }
-        });
-        if (resp.ok) {
-          const rows = await resp.json();
-          _sbEquipesMap = new Map();
-          for (const r of rows) _sbEquipesMap.set(r.id, r.nome || r.id);
+    const loadScripts = async () => {
+      const local = Templates.loadAll(false).map(t => ({ nome: t.title, conteudo_bruto: t.html, _local: true, _team: 'Local' }));
+
+      if (!scriptsCache) {
+        try {
+          const hdrs = { apikey: SMAX_SB_KEY, Authorization: `Bearer ${SMAX_SB_KEY}`, 'Accept-Profile': 'public' };
+
+          // Tenta carregar com embed do nome da equipe via FK (PostgREST resource embedding)
+          let fromDB = [];
+          let embedOk = false;
+          try {
+            const embedUrl = `${SMAX_SB_URL}/rest/v1/scripts_customizados?select=id,nome,conteudo_bruto,equipe_id,equipes(nome)&deletado=eq.false&order=nome`;
+            const r1 = await fetch(embedUrl, { headers: hdrs });
+            if (r1.ok) {
+              fromDB = await r1.json();
+              embedOk = true;
+              for (const s of fromDB) {
+                s._team = s.equipes?.nome || 'Remoto';
+                delete s.equipes; // limpa campo de embed
+              }
+            }
+          } catch (_) { /* embed falhou, tenta abordagem alternativa */ }
+
+          // Fallback: carrega sem embed e tenta resolver equipe_id separadamente
+          if (!embedOk) {
+            const plainUrl = `${SMAX_SB_URL}/rest/v1/scripts_customizados?select=id,nome,conteudo_bruto,equipe_id&deletado=eq.false&order=nome`;
+            const r2 = await fetch(plainUrl, { headers: hdrs });
+            if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
+            fromDB = await r2.json();
+
+            // Tenta carregar tabela de equipes para resolver IDs → nomes
+            const eqMap = new Map();
+            for (const tbl of ['equipes', 'gerenciador_equipes']) {
+              try {
+                const rEq = await fetch(`${SMAX_SB_URL}/rest/v1/${tbl}?select=id,nome`, { headers: hdrs });
+                if (rEq.ok) {
+                  for (const row of await rEq.json()) eqMap.set(row.id, row.nome || row.id);
+                  break;
+                }
+              } catch (_) { /* tabela não existe, tenta próxima */ }
+            }
+
+            for (const s of fromDB) {
+              s._team = (s.equipe_id && eqMap.get(s.equipe_id)) || 'Remoto';
+            }
+          }
+
+          console.log('[SMAX] Scripts carregados:', fromDB.length, '| embed:', embedOk, '| equipes:', [...new Set(fromDB.map(s => s._team))]);
+          const shared = SharedConfig.getScripts(false).map(s => ({ ...s, _team: s._team || 'Compartilhado' }));
+          scriptsCache = [...shared, ...fromDB];
+        } catch (e) {
+          console.warn('[SMAX] ResponseHUD: falha ao carregar scripts:', e);
+          scriptsCache = SharedConfig.getScripts(false).map(s => ({ ...s, _team: s._team || 'Compartilhado' }));
         }
-      } catch (e) { console.warn('[SMAX] Falha ao carregar equipes:', e); }
-      if (!_sbEquipesMap) _sbEquipesMap = new Map();
-      return _sbEquipesMap;
+      }
+
+      const seen = new Set(local.map(s => (s.nome || '').trim().toLowerCase()));
+      const remote = scriptsCache.filter(s => !seen.has((s.nome || '').trim().toLowerCase()));
+      return [...local, ...remote];
     };
 
     const openScriptPicker = async () => {
@@ -6873,13 +6880,14 @@
 
         const teamName = s._team || 'Local';
         const teamColor = getTeamColor(teamName);
-        const subject = extractSubject(s.nome);
+        const title = s.nome || s.title || '(sem nome)';
+        const subject = extractSubject(title);
 
         ppContent.innerHTML = `
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="smax-sp-pp-team" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
           </div>
-          <div class="smax-sp-pp-title">${Utils.escapeHtml(s.nome || '')}</div>
+          <div class="smax-sp-pp-title">${Utils.escapeHtml(title)}</div>
           ${subject ? `<div><span class="smax-sp-pp-label">Assunto</span><br><span class="smax-sp-pp-subject">${Utils.escapeHtml(subject)}</span></div>` : ''}
           <div>
             <span class="smax-sp-pp-label">Conteúdo</span>
@@ -6935,15 +6943,16 @@
           const teamColor = getTeamColor(teamName);
           const origIdx = allScripts.indexOf(s);
           const stripped = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-          const subject = extractSubject(s.nome);
+          const title = s.nome || s.title || '(sem nome)';
+          const subject = extractSubject(title);
           const isSelected = selectedScript === s;
           const tagHtml = subject ? `<div class="smax-sp-script-tags"><span class="smax-sp-script-tag">${Utils.escapeHtml(subject)}</span></div>` : '';
           return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
             <div class="smax-sp-card-top">
               <span class="smax-sp-card-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
             </div>
-            <div class="smax-sp-card-title">${Utils.escapeHtml(s.nome || '')}</div>
-            <div class="smax-sp-card-preview">${Utils.escapeHtml(stripped.slice(0, 100))}</div>
+            <div class="smax-sp-card-title">${Utils.escapeHtml(title)}</div>
+            ${stripped ? `<div class="smax-sp-card-preview">${Utils.escapeHtml(stripped.slice(0, 120))}</div>` : ''}
             ${tagHtml}
           </div>`;
         }).join('');
@@ -6954,13 +6963,14 @@
           const teamName = s._team || 'Local';
           const teamColor = getTeamColor(teamName);
           const origIdx = allScripts.indexOf(s);
-          const subject = extractSubject(s.nome);
+          const title = s.nome || s.title || '(sem nome)';
+          const subject = extractSubject(title);
           const isSelected = selectedScript === s;
           const tagHtml = subject ? `<span class="smax-sp-script-tag" style="margin-left:6px;">${Utils.escapeHtml(subject)}</span>` : '';
           return `<div class="smax-sp-script-row${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
             <span class="smax-sp-row-dot" style="background:${teamColor};"></span>
             <div class="smax-sp-row-info">
-              <div class="smax-sp-row-title">${Utils.escapeHtml(s.nome || '')}${tagHtml}</div>
+              <div class="smax-sp-row-title">${Utils.escapeHtml(title)}${tagHtml}</div>
             </div>
             <svg class="smax-sp-row-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>`;
@@ -6972,6 +6982,7 @@
           const teamName = s._team || 'Local';
           const teamColor = getTeamColor(teamName);
           const origIdx = allScripts.indexOf(s);
+          const title = s.nome || s.title || '(sem nome)';
           const isSelected = selectedScript === s;
           return `<div class="smax-sp-tile${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
             <div class="smax-sp-tile-cap">
@@ -6979,7 +6990,7 @@
               <span class="smax-sp-tile-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
             </div>
             <div class="smax-sp-tile-body">
-              <div class="smax-sp-tile-title">${Utils.escapeHtml(s.nome || '')}</div>
+              <div class="smax-sp-tile-title">${Utils.escapeHtml(title)}</div>
             </div>
           </div>`;
         }).join('');
@@ -8904,25 +8915,42 @@
         const closePopup = (ev) => { if (!popup.contains(ev.target) && ev.target !== this) { popup.remove(); document.removeEventListener('click', closePopup, true); } };
         setTimeout(() => document.addEventListener('click', closePopup, true), 0);
 
+        // Helper: row clicável que copia o valor
+        const row = (label, value) => {
+          if (!value) return '';
+          const escaped = Utils.escapeHtml(String(value));
+          return `<div class="smax-person-row" data-copy="${escaped}" style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--sp-border);cursor:pointer;transition:background .1s;border-radius:3px;" title="Clique para copiar">
+            <span style="font-weight:600;color:var(--sp-text-muted);min-width:90px;flex-shrink:0;">${label}</span>
+            <span style="color:var(--sp-text);word-break:break-word;flex:1;">${escaped}</span>
+            <span style="color:var(--sp-text-muted);font-size:10px;opacity:.5;flex-shrink:0;">📋</span>
+          </div>`;
+        };
+
+        // Helper: resolve campo que pode ser ID numérico, objeto, ou string legível
+        const resolveField = (raw, fallback) => {
+          if (!raw && !fallback) return '';
+          if (typeof raw === 'object' && raw !== null) return raw.Name || raw.DisplayLabel || raw.FullName || fallback || '';
+          const str = String(raw || '').trim();
+          // Se for apenas dígitos, é um ID — usa fallback
+          if (/^\d+$/.test(str)) return fallback || '';
+          return str || fallback || '';
+        };
+
         try {
-          // Busca dados completos da pessoa via API (usa layout comprovado + campos extras)
+          // Busca dados completos da pessoa via API
           const _tid = ApiClient.getTenantId() || SMAX_TENANT_ID;
           const layout = 'Id,Name,FirstName,LastName,Email,Upn,Title,EmployeeNumber,Location,OrganizationalGroup,IsVIP,OfficePhoneNumber,MobilePhoneNumber';
           const url = `/rest/${_tid}/ems/Person/${encodeURIComponent(personId)}?layout=${layout}&TENANTID=${_tid}`;
           const res = await fetch(url, { credentials: 'include' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
-          // Handle all known SMAX response formats:
-          // Single entity: { properties: {...} }
-          // List wrapper:  { entities: [{ properties: {...} }] }
           const p = data?.properties
             || (Array.isArray(data?.entities) && data.entities[0]?.properties)
             || {};
 
-          const row = (label, value) => value ? `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--sp-border);">
-            <span style="font-weight:600;color:var(--sp-text-muted);min-width:90px;flex-shrink:0;">${label}</span>
-            <span style="color:var(--sp-text);word-break:break-word;">${Utils.escapeHtml(String(value))}</span>
-          </div>` : '';
+          // Fallback de localização/org do ticket selecionado
+          const entry = allFetchedEntries.find(en => en.requestedForPersonId === personId) || {};
+          const entryLoc = entry.locationName || '';
 
           const name = p.Name || personName;
           const title = p.Title || '';
@@ -8930,11 +8958,10 @@
           const email = p.Email || p.Upn || '';
           const phone = p.OfficePhoneNumber || p.Phone || '';
           const cell = p.MobilePhoneNumber || p.CellPhone || '';
-          const loc = typeof p.Location === 'object' ? (p.Location?.Name || p.Location?.DisplayLabel || '') : (p.Location || '');
-          const org = typeof p.OrganizationalGroup === 'object' ? (p.OrganizationalGroup?.Name || p.OrganizationalGroup?.DisplayLabel || '') : (p.OrganizationalGroup || '');
+          const loc = resolveField(p.Location, entryLoc);
+          const org = resolveField(p.OrganizationalGroup, '');
           const isVip = !!p.IsVIP;
 
-          // Also refresh peopleCache with the fresh data
           if (p.Id || personId) {
             DataRepository.peopleCache.set(String(p.Id || personId), {
               id: String(p.Id || personId), name, upn: p.Upn || '', email: p.Email || '',
@@ -8958,16 +8985,33 @@
               ${row('Organização', org)}
             </div>
             ${!title && !empNum && !email ? '<div style="color:var(--sp-text-muted);text-align:center;padding:6px 0;font-style:italic;">Nenhum dado adicional disponível.</div>' : ''}
+            <div style="color:var(--sp-text-muted);font-size:9px;margin-top:8px;text-align:center;font-style:italic;">Clique em um campo para copiar</div>
           `;
+
+          // Wire click-to-copy on rows
+          popup.querySelectorAll('.smax-person-row').forEach(r => {
+            r.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              const val = r.dataset.copy;
+              if (!val) return;
+              navigator.clipboard.writeText(val).then(() => {
+                const icon = r.querySelector('span:last-child');
+                if (icon) { icon.textContent = '✓'; setTimeout(() => { icon.textContent = '📋'; }, 1200); }
+              }).catch(() => {});
+            });
+            r.addEventListener('mouseenter', () => { r.style.background = 'var(--sp-primary-bg)'; });
+            r.addEventListener('mouseleave', () => { r.style.background = ''; });
+          });
         } catch (err) {
           console.warn('[SMAX] Erro ao buscar dados da pessoa:', err);
-          // Fallback: mostra dados do cache se disponíveis
           const cached = DataRepository.peopleCache.get(personId);
           if (cached && (cached.title || cached.employeeNumber || cached.email)) {
-            const row = (label, value) => value ? `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--sp-border);"><span style="font-weight:600;color:var(--sp-text-muted);min-width:90px;flex-shrink:0;">${label}</span><span style="color:var(--sp-text);word-break:break-word;">${Utils.escapeHtml(String(value))}</span></div>` : '';
             popup.innerHTML = `<div style="font-weight:700;font-size:14px;color:var(--sp-text);margin-bottom:10px;">${Utils.escapeHtml(cached.name || personName)}</div>
               <div style="display:flex;flex-direction:column;gap:0;">${row('Cargo', cached.title)}${row('Matrícula', cached.employeeNumber)}${row('E-mail', cached.email || cached.upn)}</div>
               <div style="color:var(--sp-text-muted);font-size:10px;font-style:italic;margin-top:6px;">Dados do cache (API indisponível)</div>`;
+            popup.querySelectorAll('.smax-person-row').forEach(r => {
+              r.addEventListener('click', (ev) => { ev.stopPropagation(); const val = r.dataset.copy; if (val) navigator.clipboard.writeText(val).catch(() => {}); });
+            });
           } else {
             popup.innerHTML = `<div style="color:var(--sp-danger-text);padding:8px 0;">Erro ao buscar dados: ${Utils.escapeHtml(err.message)}</div>`;
           }
