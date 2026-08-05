@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.23
+// @version      1.24
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.23';
+  const SMAX_TOOLKIT_VERSION = '1.24';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -6003,6 +6003,7 @@
         openerEl.textContent = entry.requestedForName ? `👤 ${entry.requestedForName}` : '';
         openerEl.dataset.personId = entry.requestedForPersonId || '';
         openerEl.dataset.personName = entry.requestedForName || '';
+        openerEl.dataset.locationName = entry.locationName || '';
         openerEl.style.borderBottom = entry.requestedForPersonId ? '1px dashed rgba(255,255,255,.4)' : 'none';
         openerEl.style.cursor = entry.requestedForPersonId ? 'pointer' : 'default';
       }
@@ -6794,7 +6795,7 @@
             }
 
             for (const s of fromDB) {
-              s._team = (s.equipe_id && eqMap.get(s.equipe_id)) || 'Remoto';
+              s._team = (s.equipe_id && eqMap.get(s.equipe_id)) || s.equipe_id || 'Remoto';
             }
           }
 
@@ -6942,18 +6943,13 @@
           const teamName = s._team || 'Local';
           const teamColor = getTeamColor(teamName);
           const origIdx = allScripts.indexOf(s);
-          const stripped = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
           const title = s.nome || s.title || '(sem nome)';
-          const subject = extractSubject(title);
           const isSelected = selectedScript === s;
-          const tagHtml = subject ? `<div class="smax-sp-script-tags"><span class="smax-sp-script-tag">${Utils.escapeHtml(subject)}</span></div>` : '';
           return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
             <div class="smax-sp-card-top">
               <span class="smax-sp-card-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
             </div>
             <div class="smax-sp-card-title">${Utils.escapeHtml(title)}</div>
-            ${stripped ? `<div class="smax-sp-card-preview">${Utils.escapeHtml(stripped.slice(0, 120))}</div>` : ''}
-            ${tagHtml}
           </div>`;
         }).join('');
       };
@@ -6964,13 +6960,11 @@
           const teamColor = getTeamColor(teamName);
           const origIdx = allScripts.indexOf(s);
           const title = s.nome || s.title || '(sem nome)';
-          const subject = extractSubject(title);
           const isSelected = selectedScript === s;
-          const tagHtml = subject ? `<span class="smax-sp-script-tag" style="margin-left:6px;">${Utils.escapeHtml(subject)}</span>` : '';
           return `<div class="smax-sp-script-row${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
             <span class="smax-sp-row-dot" style="background:${teamColor};"></span>
             <div class="smax-sp-row-info">
-              <div class="smax-sp-row-title">${Utils.escapeHtml(title)}${tagHtml}</div>
+              <div class="smax-sp-row-title">${Utils.escapeHtml(title)}</div>
             </div>
             <svg class="smax-sp-row-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>`;
@@ -8948,9 +8942,8 @@
             || (Array.isArray(data?.entities) && data.entities[0]?.properties)
             || {};
 
-          // Fallback de localização/org do ticket selecionado
-          const entry = allFetchedEntries.find(en => en.requestedForPersonId === personId) || {};
-          const entryLoc = entry.locationName || '';
+          // Fallback de localização do opener (data-attribute do ticket)
+          const entryLoc = this.dataset.locationName || '';
 
           const name = p.Name || personName;
           const title = p.Title || '';
