@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.21
+// @version      1.22
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.21';
+  const SMAX_TOOLKIT_VERSION = '1.22';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -783,67 +783,117 @@
 #smax-disc-modal-counter { font-size:11px; color:var(--sp-text-muted); }
 #smax-disc-modal-replicate { font-size:11px; padding:4px 14px; border-radius:var(--sp-r-sm); border:1px solid var(--sp-border); background:var(--sp-surface-2); color:var(--sp-text); cursor:pointer; transition:all .12s; }
 
-/* Script picker modal */
-#smax-resp-script-box { background:var(--sp-surface); border:1px solid var(--sp-border); border-radius:var(--sp-r-lg); width:90%; max-width:900px; height:82%; display:flex; flex-direction:column; overflow:hidden; box-shadow:var(--sp-shadow); font-family:inherit; color:var(--sp-text); }
-#smax-resp-script-box-header { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--sp-header-bg); color:var(--sp-header-fg); border-bottom:2px solid var(--sp-accent); flex-shrink:0; }
-#smax-resp-script-box-header h4 { margin:0; font-size:14px; font-weight:700; color:var(--sp-header-fg); flex:1; }
-#smax-resp-script-search-wrap { padding:8px 12px; border-bottom:1px solid var(--sp-border); flex-shrink:0; background:var(--sp-surface-2); }
-#smax-resp-script-search-inp { width:100%; box-sizing:border-box; background:var(--sp-input-bg); border:1px solid var(--sp-border); border-radius:var(--sp-r-sm); padding:7px 10px; color:var(--sp-text); font-size:13px; outline:none; }
-#smax-resp-script-search-inp:focus { border-color:var(--sp-accent); box-shadow:0 0 0 3px var(--sp-ring); }
-#smax-resp-script-split { flex:1; display:flex; min-height:0; overflow:hidden; }
-#smax-resp-script-list-col { width:300px; flex-shrink:0; overflow-y:auto; border-right:1px solid var(--sp-border); background:var(--sp-surface-2); display:flex; flex-direction:column; }
-.smax-resp-script-row { padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--sp-border); transition:background .1s; }
-.smax-resp-script-row:hover { background:var(--sp-primary-hover); }
-.smax-resp-script-row.selected { background:var(--sp-primary-bg); border-left:3px solid var(--sp-accent); }
-.smax-resp-script-row-title { font-size:13px; font-weight:600; color:var(--sp-text); }
-.smax-resp-script-row-preview { font-size:11px; color:var(--sp-text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#smax-resp-script-preview-col { flex:1; overflow-y:auto; padding:16px 20px; color:var(--sp-text); font-size:13px; line-height:1.65; }
-#smax-resp-script-preview-empty { color:var(--sp-text-muted); font-style:italic; padding:20px; }
-#smax-resp-script-box-footer { padding:10px 16px; border-top:1px solid var(--sp-border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0; background:var(--sp-surface-2); }
-#smax-resp-script-count { font-size:12px; color:var(--sp-text-muted); }
-#smax-resp-script-use-btn { padding:8px 24px; border:none; border-radius:var(--sp-r-md); background:var(--sp-accent); color:var(--sp-on-accent); font-size:13px; font-weight:700; cursor:pointer; transition:opacity .12s; }
-#smax-resp-script-use-btn:disabled { opacity:.4; cursor:default; }
+/* Script picker modal — design fiel ao modelo */
+#smax-resp-script-box { background:var(--sp-surface); border-radius:16px; width:80vw; height:80vh; min-width:720px; min-height:520px; max-width:1440px; max-height:900px; display:flex; flex-direction:column; box-shadow:0 32px 80px rgba(0,0,0,.35); overflow:hidden; font-family:inherit; color:var(--sp-text); }
+#smax-resp-script-box-header { background:#1d4ed8; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.smax-sp-header-left { display:flex; align-items:center; gap:9px; color:#fff; font-size:15px; font-weight:600; letter-spacing:-.01em; }
+.smax-sp-header-left h4 { margin:0; font-size:15px; font-weight:600; color:#fff; }
+.smax-sp-header-right { display:flex; align-items:center; gap:8px; }
+.smax-sp-vtoggle { display:flex; background:rgba(255,255,255,.12); border-radius:8px; padding:3px; gap:2px; }
+.smax-sp-vtoggle-btn { background:transparent; border:none; color:rgba(255,255,255,.65); padding:5px 8px; border-radius:6px; cursor:pointer; font-size:12px; font-family:inherit; transition:all .12s; }
+.smax-sp-vtoggle-btn:hover { color:rgba(255,255,255,.85); }
+.smax-sp-vtoggle-btn.on { background:rgba(255,255,255,.22); color:#fff; }
+#smax-resp-script-modal-close { border:none; background:rgba(255,255,255,.12); color:#fff; font-size:16px; width:32px; height:32px; border-radius:8px; cursor:pointer; flex-shrink:0; transition:background .12s; }
+#smax-resp-script-modal-close:hover { background:rgba(255,255,255,.22); }
 
-/* Script picker — enhanced filter bar & grid cards */
-#smax-resp-script-filter-bar { padding:8px 12px; border-bottom:1px solid var(--sp-border); flex-shrink:0; background:var(--sp-surface-2); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-#smax-resp-script-search-wrap { padding:0; border-bottom:none; flex:1; min-width:160px; position:relative; background:transparent; }
-#smax-resp-script-search-wrap svg { position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--sp-text-muted); pointer-events:none; }
-#smax-resp-script-search-inp { width:100%; box-sizing:border-box; background:var(--sp-input-bg); border:1px solid var(--sp-border); border-radius:var(--sp-r-sm); padding:6px 10px 6px 30px; color:var(--sp-text); font-size:13px; outline:none; }
-#smax-resp-script-search-inp:focus { border-color:var(--sp-accent); box-shadow:0 0 0 3px var(--sp-ring); }
+/* Filter bar */
+#smax-resp-script-filter-bar { padding:10px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--sp-border); flex-shrink:0; flex-wrap:wrap; }
+#smax-resp-script-search-wrap { flex:1; min-width:200px; position:relative; }
+#smax-resp-script-search-wrap svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--sp-text-muted); pointer-events:none; }
+#smax-resp-script-search-inp { width:100%; box-sizing:border-box; padding:8px 12px 8px 34px; border:1.5px solid var(--sp-border); border-radius:8px; background:var(--sp-surface-2); color:var(--sp-text); font-size:13.5px; outline:none; font-family:inherit; }
+#smax-resp-script-search-inp:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
 .smax-sp-team-chips { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
-.smax-sp-chip { padding:4px 11px; border-radius:20px; border:1.5px solid var(--sp-border); background:var(--sp-surface); color:var(--sp-text-muted); font-size:11.5px; font-weight:500; cursor:pointer; transition:all .13s; white-space:nowrap; font-family:inherit; }
-.smax-sp-chip:hover { border-color:var(--sp-accent); color:var(--sp-accent); }
-.smax-sp-chip.on { background:var(--sp-accent); color:#fff; border-color:var(--sp-accent); }
-.smax-sp-chip[data-team="local"].on { background:#64748b; border-color:#64748b; }
-.smax-sp-chip[data-team="compartilhado"].on { background:#10b981; border-color:#10b981; }
-.smax-sp-chip[data-team="remoto"].on { background:#f59e0b; border-color:#f59e0b; }
+.smax-sp-chip { padding:5px 12px; border-radius:20px; border:1.5px solid var(--sp-border); background:var(--sp-surface-2); color:var(--sp-text-muted); font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; font-family:inherit; transition:all .12s; }
+.smax-sp-chip:hover { border-color:#2563eb; color:#2563eb; }
+.smax-sp-chip.on { background:#2563eb; color:#fff; border-color:#2563eb; }
 .smax-sp-subjects-wrap { position:relative; }
-.smax-sp-subjects-btn { padding:4px 11px; border-radius:20px; border:1.5px solid var(--sp-border); background:var(--sp-surface); color:var(--sp-text-muted); font-size:11.5px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:4px; transition:all .13s; font-family:inherit; white-space:nowrap; }
-.smax-sp-subjects-btn:hover { border-color:var(--sp-accent); color:var(--sp-accent); }
-.smax-sp-subjects-btn.active { border-color:var(--sp-accent); color:var(--sp-accent); background:var(--sp-primary-bg); }
-.smax-sp-subjects-btn-count { background:var(--sp-accent); color:#fff; font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:10px; display:none; line-height:1.5; }
+.smax-sp-subjects-btn { padding:5px 12px; border-radius:20px; border:1.5px solid var(--sp-border); background:var(--sp-surface-2); color:var(--sp-text-muted); font-size:12px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:5px; transition:all .12s; font-family:inherit; white-space:nowrap; }
+.smax-sp-subjects-btn:hover { border-color:#2563eb; color:#2563eb; }
+.smax-sp-subjects-btn.active { border-color:#2563eb; color:#2563eb; background:var(--sp-primary-bg); }
+.smax-sp-subjects-btn-count { background:#2563eb; color:#fff; font-size:10px; font-weight:700; padding:1px 5px; border-radius:10px; display:none; line-height:1.5; }
 .smax-sp-subjects-btn-count.vis { display:inline; }
-.smax-sp-subject-panel { position:absolute; top:calc(100% + 5px); right:0; background:var(--sp-surface); border:1px solid var(--sp-border); border-radius:var(--sp-r-md); padding:5px; min-width:190px; max-height:260px; overflow-y:auto; box-shadow:var(--sp-shadow); z-index:200; display:none; }
+.smax-sp-subject-panel { position:absolute; top:calc(100% + 6px); right:0; background:var(--sp-surface); border:1.5px solid var(--sp-border); border-radius:10px; padding:6px; min-width:200px; max-height:280px; overflow-y:auto; box-shadow:0 4px 16px rgba(0,0,0,.12); z-index:200; display:none; }
 .smax-sp-subject-panel.open { display:block; }
-.smax-sp-subject-item { display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:5px; cursor:pointer; font-size:12.5px; color:var(--sp-text-muted); transition:background .1s; user-select:none; }
+.smax-sp-subject-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--sp-text-muted); transition:background .1s; user-select:none; }
 .smax-sp-subject-item:hover { background:var(--sp-primary-bg); }
-.smax-sp-subject-item input { accent-color:var(--sp-accent); cursor:pointer; }
-.smax-sp-count-pill { display:flex; align-items:baseline; gap:2px; padding:3px 10px; border:1px solid var(--sp-border); border-radius:20px; background:var(--sp-surface); flex-shrink:0; white-space:nowrap; }
-.smax-sp-count-n { font-size:14px; font-weight:800; color:var(--sp-accent); font-variant-numeric:tabular-nums; }
-.smax-sp-count-sep { font-size:10px; color:var(--sp-text-muted); margin:0 2px; }
-.smax-sp-count-tot { font-size:10px; color:var(--sp-text-muted); font-variant-numeric:tabular-nums; }
-/* Grid layout for list column */
-#smax-resp-script-list-col.grid-view { display:grid; grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:8px; padding:10px; overflow-y:auto; align-content:start; width:55%; flex-shrink:0; }
-.smax-sp-script-card { background:var(--sp-surface); border:1.5px solid var(--sp-border); border-radius:var(--sp-r-md); padding:10px 12px 10px 14px; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:3px; }
-.smax-sp-script-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--smax-stripe,var(--sp-accent)); border-radius:var(--sp-r-md) 0 0 var(--sp-r-md); }
-.smax-sp-script-card:hover { border-color:var(--smax-stripe,var(--sp-accent)); background:var(--sp-primary-bg); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
-.smax-sp-script-card.selected { border-color:var(--sp-accent); background:var(--sp-primary-bg); box-shadow:0 0 0 3px var(--sp-ring); }
+.smax-sp-subject-item input { accent-color:#2563eb; cursor:pointer; }
+.smax-sp-count-pill { display:flex; align-items:baseline; gap:2px; padding:4px 11px; border:1px solid var(--sp-border); border-radius:20px; background:var(--sp-surface-2); flex-shrink:0; white-space:nowrap; }
+.smax-sp-count-n { font-size:15px; font-weight:800; color:#2563eb; font-variant-numeric:tabular-nums; }
+.smax-sp-count-sep { font-size:11px; color:var(--sp-text-muted); margin:0 2px; }
+.smax-sp-count-tot { font-size:11px; color:var(--sp-text-muted); font-variant-numeric:tabular-nums; }
+
+/* Body: main list + preview panel */
+#smax-resp-script-split { flex:1; display:flex; min-height:0; overflow:hidden; }
+#smax-resp-script-list-col { flex:1; overflow-y:auto; background:var(--sp-surface); }
+#smax-resp-script-preview-col { width:360px; flex-shrink:0; border-left:1.5px solid var(--sp-border); display:flex; flex-direction:column; background:var(--sp-surface); overflow-y:auto; }
+#smax-resp-script-preview-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--sp-text-muted); gap:10px; padding:24px; font-size:13px; font-style:italic; }
+.smax-sp-pp-content { flex:1; overflow-y:auto; padding:20px; display:none; flex-direction:column; gap:14px; }
+.smax-sp-pp-content.vis { display:flex; }
+.smax-sp-pp-id { font-size:11.5px; font-weight:600; font-family:'SF Mono','Cascadia Code',Consolas,monospace; color:var(--sp-text-muted); }
+.smax-sp-pp-team { font-size:10px; font-weight:700; padding:3px 8px; border-radius:10px; color:#fff; display:inline-block; }
+.smax-sp-pp-title { font-size:15px; font-weight:700; color:var(--sp-text); line-height:1.4; }
+.smax-sp-pp-label { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--sp-text-muted); }
+.smax-sp-pp-subject { font-size:11px; padding:3px 8px; border-radius:4px; background:var(--sp-surface-2); border:1px solid var(--sp-border); color:var(--sp-text-muted); display:inline-block; }
+.smax-sp-pp-solution { font-size:13px; color:var(--sp-text-muted); line-height:1.65; background:var(--sp-surface-2); border:1px solid var(--sp-border); border-radius:8px; padding:13px; white-space:pre-wrap; max-height:300px; overflow-y:auto; }
+
+/* Grid view (default) */
+#smax-resp-script-list-col.view-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; padding:12px; align-content:start; }
+.smax-sp-script-card { background:var(--sp-surface-2); border:1.5px solid var(--sp-border); border-radius:10px; padding:11px 13px 11px 15px; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:4px; }
+.smax-sp-script-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--smax-stripe,#94a3b8); border-radius:10px 0 0 10px; }
+.smax-sp-script-card:hover { border-color:var(--smax-stripe,#2563eb); background:var(--sp-primary-bg); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+.smax-sp-script-card.selected { border-color:#2563eb; background:var(--sp-primary-bg); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
 .smax-sp-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }
 .smax-sp-card-badge { font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:10px; color:#fff; white-space:nowrap; }
-.smax-sp-card-title { font-size:12px; font-weight:600; color:var(--sp-text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.smax-sp-card-preview { font-size:11px; color:var(--sp-text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.smax-sp-card-title { font-size:12.5px; font-weight:600; color:var(--sp-text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.smax-sp-card-preview { font-size:11.5px; color:var(--sp-text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .smax-sp-script-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:2px; }
-.smax-sp-script-tag { font-size:9.5px; padding:2px 5px; border-radius:4px; background:var(--sp-border); color:var(--sp-text-muted); }
+.smax-sp-script-tag { font-size:10px; padding:2px 5px; border-radius:4px; background:var(--sp-border); color:var(--sp-text-muted); }
+
+/* Rows view */
+#smax-resp-script-list-col.view-rows { display:flex; flex-direction:column; padding:0; }
+.smax-sp-script-row { display:grid; grid-template-columns:10px 1fr 18px; gap:0 14px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--sp-border); cursor:pointer; position:relative; transition:background .1s; }
+.smax-sp-script-row:hover { background:var(--sp-primary-bg); }
+.smax-sp-script-row::before { content:''; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:transparent; transition:background .1s; }
+.smax-sp-script-row:hover::before { background:var(--smax-stripe,#2563eb); }
+.smax-sp-script-row.selected { background:var(--sp-primary-bg); }
+.smax-sp-script-row.selected::before { background:var(--smax-stripe,#2563eb); }
+.smax-sp-row-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.smax-sp-row-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.smax-sp-row-title { font-size:13px; font-weight:500; color:var(--sp-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.smax-sp-row-tags { display:flex; gap:4px; align-items:center; }
+.smax-sp-row-chevron { color:var(--sp-text-muted); opacity:0; transition:opacity .1s; }
+.smax-sp-script-row:hover .smax-sp-row-chevron { opacity:.5; }
+
+/* Tiles view (mosaic) */
+#smax-resp-script-list-col.view-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; padding:12px; align-content:start; }
+.smax-sp-tile { border-radius:10px; border:1.5px solid var(--sp-border); display:flex; flex-direction:column; overflow:hidden; cursor:pointer; transition:border-color .13s,transform .1s,box-shadow .13s; }
+.smax-sp-tile:hover { border-color:var(--smax-stripe,#2563eb); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+.smax-sp-tile.selected { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+.smax-sp-tile-cap { padding:10px 12px; position:relative; display:flex; flex-direction:column; gap:4px; }
+.smax-sp-tile-cap-bg { position:absolute; inset:0; opacity:.1; }
+.smax-sp-tile-badge { font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:10px; color:#fff; display:inline-block; align-self:flex-start; position:relative; z-index:1; }
+.smax-sp-tile-body { padding:9px 12px 11px; flex:1; background:var(--sp-surface); }
+.smax-sp-tile-title { font-size:12px; font-weight:600; color:var(--sp-text); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* Hover card */
+.smax-sp-hover-card { position:fixed; width:300px; background:var(--sp-surface); border:1.5px solid var(--sp-border); border-radius:12px; padding:14px; box-shadow:0 12px 36px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08); z-index:999999; pointer-events:none; opacity:0; transform:translateY(4px); transition:opacity .15s,transform .15s; }
+.smax-sp-hover-card.vis { opacity:1; transform:translateY(0); }
+.smax-sp-hc-title { font-size:13px; font-weight:600; color:var(--sp-text); margin-bottom:6px; }
+.smax-sp-hc-preview { font-size:11.5px; color:var(--sp-text-muted); line-height:1.45; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:8px; }
+.smax-sp-hc-hint { font-size:10px; color:var(--sp-text-muted); font-style:italic; }
+
+/* Legacy disc picker row compat */
+.smax-resp-script-row { padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--sp-border); transition:background .1s; }
+.smax-resp-script-row:hover { background:var(--sp-primary-hover); }
+.smax-resp-script-row.selected { background:var(--sp-primary-bg); border-left:3px solid #2563eb; }
+.smax-resp-script-row-title { font-size:13px; font-weight:600; color:var(--sp-text); }
+.smax-resp-script-row-preview { font-size:11px; color:var(--sp-text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Footer */
+#smax-resp-script-box-footer { border-top:1.5px solid var(--sp-border); padding:11px 20px; display:flex; justify-content:flex-end; flex-shrink:0; }
+#smax-resp-script-count { font-size:12px; color:var(--sp-text-muted); display:none; }
+#smax-resp-script-use-btn { padding:8px 24px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-size:13.5px; font-weight:600; cursor:pointer; transition:opacity .12s; font-family:inherit; }
+#smax-resp-script-use-btn:disabled { opacity:.35; cursor:not-allowed; }
 
 /* ============================================================
    BATCH CONFIRM
@@ -5949,18 +5999,12 @@
       }
 
       const openerEl = backdrop.querySelector('#smax-resp-opener');
-      if (openerEl) openerEl.textContent = entry.requestedForName ? `👤 ${entry.requestedForName}` : '';
-
-      // Botão "Dados" do solicitante — mostra apenas quando há ID de pessoa
-      const dataBtn = backdrop.querySelector('#smax-resp-requester-data-btn');
-      if (dataBtn) {
-        if (entry.requestedForPersonId) {
-          dataBtn.style.display = '';
-          dataBtn.dataset.personId = entry.requestedForPersonId;
-          dataBtn.dataset.personName = entry.requestedForName || '';
-        } else {
-          dataBtn.style.display = 'none';
-        }
+      if (openerEl) {
+        openerEl.textContent = entry.requestedForName ? `👤 ${entry.requestedForName}` : '';
+        openerEl.dataset.personId = entry.requestedForPersonId || '';
+        openerEl.dataset.personName = entry.requestedForName || '';
+        openerEl.style.borderBottom = entry.requestedForPersonId ? '1px dashed rgba(255,255,255,.4)' : 'none';
+        openerEl.style.cursor = entry.requestedForPersonId ? 'pointer' : 'default';
       }
 
       // Título/cargo do solicitante — busca no peopleCache pelo ID, fallback ao campo da resposta
@@ -6699,23 +6743,31 @@
 
     const loadScripts = async () => {
       // Scripts locais (configurações) são sempre frescos — sem cache
-      const local = Templates.loadAll(false).map(t => ({ nome: t.title, conteudo_bruto: t.html, _local: true }));
+      const local = Templates.loadAll(false).map(t => ({ nome: t.title, conteudo_bruto: t.html, _local: true, _team: 'Local' }));
 
       if (!scriptsCache) {
         try {
-          const equipeId = GM_getValue('smax_gerenciador_equipe_id', null);
-          let url = `${SMAX_SB_URL}/rest/v1/scripts_customizados?select=id,nome,conteudo_bruto&deletado=eq.false&order=nome`;
-          if (equipeId) url += `&equipe_id=eq.${equipeId}`;
+          // Carrega mapa de equipes e scripts em paralelo
+          const eqMapPromise = fetchEquipesMap();
+          // Carrega TODOS os scripts (sem filtro por equipe) para permitir filtragem por equipe na UI
+          const url = `${SMAX_SB_URL}/rest/v1/scripts_customizados?select=id,nome,conteudo_bruto,equipe_id&deletado=eq.false&order=nome`;
           const resp = await fetch(url, {
             headers: { apikey: SMAX_SB_KEY, Authorization: `Bearer ${SMAX_SB_KEY}`, 'Accept-Profile': 'public' }
           });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const fromDB = await resp.json();
-          const shared = SharedConfig.getScripts(false);
+          const eqMap = await eqMapPromise;
+
+          // Resolve nome da equipe para cada script
+          for (const s of fromDB) {
+            s._team = (s.equipe_id && eqMap.get(s.equipe_id)) || 'Remoto';
+          }
+
+          const shared = SharedConfig.getScripts(false).map(s => ({ ...s, _team: s._team || 'Compartilhado' }));
           scriptsCache = [...shared, ...fromDB];
         } catch (e) {
           console.warn('[SMAX] ResponseHUD: falha ao carregar scripts:', e);
-          scriptsCache = SharedConfig.getScripts(false);
+          scriptsCache = SharedConfig.getScripts(false).map(s => ({ ...s, _team: s._team || 'Compartilhado' }));
         }
       }
 
@@ -6725,11 +6777,32 @@
       return [...local, ...remote];
     };
 
-    // Team color map for script source badges
-    const SMAX_SP_SOURCE_COLORS = {
-      local:          '#64748b',
-      compartilhado:  '#10b981',
-      remoto:         '#f59e0b',
+    // Team color map — cores por equipe (modelo de referência)
+    const SMAX_SP_TEAM_COLORS = {
+      'SGS 2.2.1': '#3b82f6',   // azul
+      'SGS 2.2.2': '#10b981',   // verde
+      'SGS 2.3.1': '#7c3aed',   // roxo
+      'SGS 2.3.2': '#f59e0b',   // âmbar
+    };
+    const SMAX_SP_DEFAULT_COLOR = '#94a3b8';
+    const getTeamColor = (teamName) => SMAX_SP_TEAM_COLORS[teamName] || SMAX_SP_DEFAULT_COLOR;
+
+    // Cache de equipes do Supabase (id → nome)
+    let _sbEquipesMap = null;
+    const fetchEquipesMap = async () => {
+      if (_sbEquipesMap) return _sbEquipesMap;
+      try {
+        const resp = await fetch(`${SMAX_SB_URL}/rest/v1/equipes?select=id,nome`, {
+          headers: { apikey: SMAX_SB_KEY, Authorization: `Bearer ${SMAX_SB_KEY}`, 'Accept-Profile': 'public' }
+        });
+        if (resp.ok) {
+          const rows = await resp.json();
+          _sbEquipesMap = new Map();
+          for (const r of rows) _sbEquipesMap.set(r.id, r.nome || r.id);
+        }
+      } catch (e) { console.warn('[SMAX] Falha ao carregar equipes:', e); }
+      if (!_sbEquipesMap) _sbEquipesMap = new Map();
+      return _sbEquipesMap;
     };
 
     const openScriptPicker = async () => {
@@ -6738,13 +6811,14 @@
 
       // Toggle
       if (modal.dataset.open === 'true') { modal.dataset.open = 'false'; return; }
-
       modal.dataset.open = 'true';
 
+      // — Referências DOM —
       const listCol       = modal.querySelector('#smax-resp-script-list-col');
       const previewCol    = modal.querySelector('#smax-resp-script-preview-col');
+      const previewEmpty  = modal.querySelector('#smax-resp-script-preview-empty');
+      const ppContent     = modal.querySelector('#smax-resp-sp-pp-content');
       const searchInp     = modal.querySelector('#smax-resp-script-search-inp');
-      const countEl       = modal.querySelector('#smax-resp-script-count');
       const useBtn        = modal.querySelector('#smax-resp-script-use-btn');
       const closeBtn      = modal.querySelector('#smax-resp-script-modal-close');
       const teamChipsCont = modal.querySelector('#smax-resp-sp-team-chips');
@@ -6754,112 +6828,198 @@
       const countN        = modal.querySelector('#smax-resp-sp-count-n');
       const countSep      = modal.querySelector('#smax-resp-sp-count-sep');
       const countTot      = modal.querySelector('#smax-resp-sp-count-tot');
+      const vtoggle       = modal.querySelector('#smax-resp-sp-vtoggle');
+      const hoverCard     = modal.querySelector('#smax-resp-sp-hover-card');
 
+      // — Estado —
       let selectedScript   = null;
       let allScripts       = [];
-      let activeSource     = 'todos'; // chip filter
-      let activeSubjects   = new Set(); // subject checkbox filter
-      let allSubjects      = [];
+      let activeTeam       = ''; // '' = Todos
+      let activeSubjects   = new Set();
+      let activeView       = 'grid'; // 'grid' | 'rows' | 'tiles'
+      let hoverTimer       = null;
 
-      // Derive source label for a script
-      const getSource = (s) => s._local ? 'local' : s._shared ? 'compartilhado' : 'remoto';
-
-      // Extract a simple "subject" tag from script name
+      // Extrai assunto do nome do script (primeira parte antes de separador)
       const extractSubject = (nome) => {
         if (!nome) return null;
-        const separators = ['. ', ' — ', ' - ', ' – '];
-        for (const sep of separators) {
+        const seps = ['. ', ' — ', ' - ', ' – '];
+        for (const sep of seps) {
           const idx = nome.indexOf(sep);
           if (idx > 1) return nome.slice(0, idx).trim();
         }
-        // Fallback: first word(s) up to 20 chars
-        const firstWord = nome.split(' ')[0];
-        return firstWord.length > 2 ? firstWord : null;
+        const first = nome.split(' ')[0];
+        return first.length > 2 ? first : null;
       };
 
-      // Update count pill
+      // — Count pill —
       const updateCount = (filtered) => {
         const total = allScripts.length;
         countN.textContent = filtered.length;
         if (filtered.length < total) {
-          countSep.style.display = '';
-          countTot.style.display = '';
+          countSep.style.display = ''; countTot.style.display = '';
           countTot.textContent = total;
         } else {
-          countSep.style.display = 'none';
-          countTot.style.display = 'none';
+          countSep.style.display = 'none'; countTot.style.display = 'none';
         }
-        // Keep legacy countEl hidden but set for compat
-        if (countEl) countEl.textContent = filtered.length < total
-          ? `${filtered.length} de ${total}`
-          : `${total} scripts`;
       };
 
+      // — Preview panel —
       const selectScript = (s) => {
         selectedScript = s;
         useBtn.disabled = false;
-        previewCol.innerHTML = '';
-        // Preview header
-        const src = getSource(s);
-        const stripeColor = SMAX_SP_SOURCE_COLORS[src] || 'var(--sp-accent)';
-        const previewHdr = document.createElement('div');
-        previewHdr.style.cssText = 'margin-bottom:12px;';
-        previewHdr.innerHTML = `
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
-            <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:10px;color:#fff;background:${stripeColor};">${Utils.escapeHtml(src)}</span>
-          </div>
-          <div style="font-size:14px;font-weight:700;color:var(--sp-text);line-height:1.4;margin-bottom:8px;">${Utils.escapeHtml(s.nome || '')}</div>
-          <div style="height:1px;background:var(--sp-border);margin-bottom:12px;"></div>
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--sp-text-muted);margin-bottom:6px;">Conteúdo</div>`;
-        previewCol.appendChild(previewHdr);
-        const previewBody = document.createElement('div');
-        previewBody.innerHTML = Utils.sanitizeRichText(s.conteudo_bruto) || '<em>Sem conteúdo.</em>';
-        previewCol.appendChild(previewBody);
+        if (previewEmpty) previewEmpty.style.display = 'none';
+        if (!ppContent) return;
+        ppContent.classList.add('vis');
 
-        listCol.querySelectorAll('.smax-sp-script-card').forEach(r => {
-          r.classList.toggle('selected', r.dataset.idx === String(allScripts.indexOf(s)));
-        });
-        // Legacy rows compat (for disc picker sharing the modal)
-        listCol.querySelectorAll('.smax-resp-script-row').forEach(r => {
-          r.classList.toggle('selected', r.dataset.idx === String(allScripts.indexOf(s)));
+        const teamName = s._team || 'Local';
+        const teamColor = getTeamColor(teamName);
+        const subject = extractSubject(s.nome);
+
+        ppContent.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="smax-sp-pp-team" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
+          </div>
+          <div class="smax-sp-pp-title">${Utils.escapeHtml(s.nome || '')}</div>
+          ${subject ? `<div><span class="smax-sp-pp-label">Assunto</span><br><span class="smax-sp-pp-subject">${Utils.escapeHtml(subject)}</span></div>` : ''}
+          <div>
+            <span class="smax-sp-pp-label">Conteúdo</span>
+            <div class="smax-sp-pp-solution">${Utils.sanitizeRichText(s.conteudo_bruto) || '<em>Sem conteúdo.</em>'}</div>
+          </div>`;
+
+        // Marca seleção nos cards/rows/tiles
+        listCol.querySelectorAll('[data-idx]').forEach(el => {
+          el.classList.toggle('selected', el.dataset.idx === String(allScripts.indexOf(s)));
         });
       };
 
-      const renderList = (filtered) => {
-        listCol.classList.add('grid-view');
-        if (!filtered.length) {
-          listCol.innerHTML = '<div style="grid-column:1/-1;padding:24px;color:var(--sp-text-muted);font-size:12px;text-align:center;">Nenhum script encontrado.</div>';
-          return;
-        }
+      const clearSelection = () => {
+        selectedScript = null;
+        useBtn.disabled = true;
+        if (previewEmpty) previewEmpty.style.display = '';
+        if (ppContent) { ppContent.classList.remove('vis'); ppContent.innerHTML = ''; }
+        listCol.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+      };
+
+      // — Hover card —
+      const showHoverCard = (s, rect) => {
+        if (!hoverCard) return;
+        const teamName = s._team || 'Local';
+        const teamColor = getTeamColor(teamName);
+        const stripped = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        hoverCard.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;color:#fff;background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
+          </div>
+          <div class="smax-sp-hc-title">${Utils.escapeHtml(s.nome || '')}</div>
+          <div class="smax-sp-hc-preview">${Utils.escapeHtml(stripped.slice(0, 200))}</div>
+          <div class="smax-sp-hc-hint">Clique para ver a solução completa</div>`;
+        let left = rect.right + 12;
+        if (left + 300 > window.innerWidth - 16) left = rect.left - 300 - 12;
+        if (left < 8) left = 8;
+        let top = rect.top;
+        if (top + 200 > window.innerHeight - 16) top = window.innerHeight - 216;
+        if (top < 8) top = 8;
+        hoverCard.style.left = left + 'px';
+        hoverCard.style.top = top + 'px';
+        hoverCard.classList.add('vis');
+      };
+      const hideHoverCard = () => {
+        if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
+        if (hoverCard) hoverCard.classList.remove('vis');
+      };
+
+      // — Render helpers por view mode —
+      const renderGrid = (filtered) => {
         listCol.innerHTML = filtered.map((s) => {
-          const src = getSource(s);
-          const stripeColor = SMAX_SP_SOURCE_COLORS[src] || 'var(--sp-accent)';
+          const teamName = s._team || 'Local';
+          const teamColor = getTeamColor(teamName);
           const origIdx = allScripts.indexOf(s);
           const stripped = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
           const subject = extractSubject(s.nome);
           const isSelected = selectedScript === s;
-          const tagHtml = subject
-            ? `<div class="smax-sp-script-tags"><span class="smax-sp-script-tag">${Utils.escapeHtml(subject)}</span></div>`
-            : '';
-          return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${stripeColor};">
+          const tagHtml = subject ? `<div class="smax-sp-script-tags"><span class="smax-sp-script-tag">${Utils.escapeHtml(subject)}</span></div>` : '';
+          return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
             <div class="smax-sp-card-top">
-              <span class="smax-sp-card-badge" style="background:${stripeColor};">${Utils.escapeHtml(src)}</span>
+              <span class="smax-sp-card-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
             </div>
             <div class="smax-sp-card-title">${Utils.escapeHtml(s.nome || '')}</div>
             <div class="smax-sp-card-preview">${Utils.escapeHtml(stripped.slice(0, 100))}</div>
             ${tagHtml}
           </div>`;
         }).join('');
-        listCol.querySelectorAll('.smax-sp-script-card').forEach((card, cardI) => {
-          card.addEventListener('click', () => selectScript(filtered[cardI]));
+      };
+
+      const renderRows = (filtered) => {
+        listCol.innerHTML = filtered.map((s) => {
+          const teamName = s._team || 'Local';
+          const teamColor = getTeamColor(teamName);
+          const origIdx = allScripts.indexOf(s);
+          const subject = extractSubject(s.nome);
+          const isSelected = selectedScript === s;
+          const tagHtml = subject ? `<span class="smax-sp-script-tag" style="margin-left:6px;">${Utils.escapeHtml(subject)}</span>` : '';
+          return `<div class="smax-sp-script-row${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
+            <span class="smax-sp-row-dot" style="background:${teamColor};"></span>
+            <div class="smax-sp-row-info">
+              <div class="smax-sp-row-title">${Utils.escapeHtml(s.nome || '')}${tagHtml}</div>
+            </div>
+            <svg class="smax-sp-row-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>`;
+        }).join('');
+      };
+
+      const renderTiles = (filtered) => {
+        listCol.innerHTML = filtered.map((s) => {
+          const teamName = s._team || 'Local';
+          const teamColor = getTeamColor(teamName);
+          const origIdx = allScripts.indexOf(s);
+          const isSelected = selectedScript === s;
+          return `<div class="smax-sp-tile${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
+            <div class="smax-sp-tile-cap">
+              <div class="smax-sp-tile-cap-bg" style="background:${teamColor};"></div>
+              <span class="smax-sp-tile-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
+            </div>
+            <div class="smax-sp-tile-body">
+              <div class="smax-sp-tile-title">${Utils.escapeHtml(s.nome || '')}</div>
+            </div>
+          </div>`;
+        }).join('');
+      };
+
+      // — Render dispatch —
+      const renderList = (filtered) => {
+        // Set view class
+        listCol.className = '';
+        listCol.id = 'smax-resp-script-list-col';
+        listCol.classList.add('view-' + activeView);
+
+        if (!filtered.length) {
+          listCol.innerHTML = '<div style="grid-column:1/-1;padding:24px;color:var(--sp-text-muted);font-size:13px;text-align:center;">Nenhum script encontrado.</div>';
+          return;
+        }
+
+        if (activeView === 'grid') renderGrid(filtered);
+        else if (activeView === 'rows') renderRows(filtered);
+        else renderTiles(filtered);
+
+        // Wire click + hover
+        listCol.querySelectorAll('[data-idx]').forEach((el) => {
+          const idx = parseInt(el.dataset.idx, 10);
+          const s = allScripts[idx];
+          if (!s) return;
+          el.addEventListener('click', () => selectScript(s));
+          el.addEventListener('mouseenter', () => {
+            hoverTimer = setTimeout(() => showHoverCard(s, el.getBoundingClientRect()), 180);
+          });
+          el.addEventListener('mouseleave', hideHoverCard);
         });
       };
 
+      // — Filtering —
       const getFiltered = () => {
         const q = searchInp.value.trim().toLowerCase();
         return allScripts.filter(s => {
-          // Source chip filter
-          if (activeSource !== 'todos' && getSource(s) !== activeSource) return false;
+          // Team chip filter
+          if (activeTeam && (s._team || 'Local') !== activeTeam) return false;
           // Subject filter
           if (activeSubjects.size > 0) {
             const subj = extractSubject(s.nome);
@@ -6881,36 +7041,50 @@
         renderList(filtered);
       };
 
-      // Build team/source chips
+      // — Build team chips (dynamic from scripts) —
       const buildChips = () => {
-        const sources = ['todos', 'local', 'compartilhado', 'remoto'];
-        teamChipsCont.innerHTML = sources.map(src => {
-          const label = src === 'todos' ? 'Todos' : src.charAt(0).toUpperCase() + src.slice(1);
-          return `<button class="smax-sp-chip${activeSource === src ? ' on' : ''}" data-team="${src}" type="button">${Utils.escapeHtml(label)}</button>`;
-        }).join('');
+        const teamSet = new Set();
+        allScripts.forEach(s => { if (s._team) teamSet.add(s._team); });
+        const teams = [...teamSet].sort();
+
+        // Chip com cor customizada por equipe
+        const chipStyle = (team, isOn) => {
+          const color = getTeamColor(team);
+          if (isOn) return `background:${color};color:#fff;border-color:${color};`;
+          return '';
+        };
+
+        teamChipsCont.innerHTML = `<button class="smax-sp-chip${!activeTeam ? ' on' : ''}" data-team="" type="button">Todos</button>` +
+          teams.map(t => `<button class="smax-sp-chip${activeTeam === t ? ' on' : ''}" data-team="${Utils.escapeHtml(t)}" type="button" style="${chipStyle(t, activeTeam === t)}">${Utils.escapeHtml(t)}</button>`).join('');
+
         teamChipsCont.querySelectorAll('.smax-sp-chip').forEach(chip => {
           chip.addEventListener('click', () => {
-            activeSource = chip.dataset.team;
+            activeTeam = chip.dataset.team;
+            // Update chip styles
             teamChipsCont.querySelectorAll('.smax-sp-chip').forEach(c => {
-              c.classList.toggle('on', c.dataset.team === activeSource);
+              const isOn = c.dataset.team === activeTeam;
+              c.classList.toggle('on', isOn);
+              if (isOn && c.dataset.team) {
+                const color = getTeamColor(c.dataset.team);
+                c.style.background = color; c.style.color = '#fff'; c.style.borderColor = color;
+              } else if (!isOn) {
+                c.style.background = ''; c.style.color = ''; c.style.borderColor = '';
+              }
             });
             applyFilter();
           });
         });
       };
 
-      // Build subjects dropdown
+      // — Build subjects dropdown —
       const buildSubjects = () => {
         const subjectSet = new Set();
         allScripts.forEach(s => {
           const subj = extractSubject(s.nome);
           if (subj) subjectSet.add(subj);
         });
-        allSubjects = [...subjectSet].sort();
-        if (!allSubjects.length) {
-          subjectBtn.style.display = 'none';
-          return;
-        }
+        const allSubjects = [...subjectSet].sort();
+        if (!allSubjects.length) { subjectBtn.style.display = 'none'; return; }
         subjectBtn.style.display = '';
         subjectPanel.innerHTML = allSubjects.map(subj => `
           <label class="smax-sp-subject-item">
@@ -6929,6 +7103,17 @@
         });
       };
 
+      // — View toggle —
+      if (vtoggle) {
+        vtoggle.querySelectorAll('.smax-sp-vtoggle-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeView = btn.dataset.view;
+            vtoggle.querySelectorAll('.smax-sp-vtoggle-btn').forEach(b => b.classList.toggle('on', b === btn));
+            applyFilter();
+          });
+        });
+      }
+
       // Subject dropdown toggle
       if (subjectBtn._smaxSbHandler) subjectBtn.removeEventListener('click', subjectBtn._smaxSbHandler);
       subjectBtn._smaxSbHandler = (e) => {
@@ -6943,18 +7128,25 @@
         }
       }, { capture: true });
 
-      // Load
-      listCol.classList.add('grid-view');
+      // — Restore header for sol mode —
+      const titleEl = modal.querySelector('.smax-sp-header-left h4');
+      if (titleEl) titleEl.textContent = 'Scripts de Respostas';
+      if (vtoggle) vtoggle.style.display = '';
+      subjectBtn.style.display = '';
+
+      // — Init state —
+      listCol.className = 'view-grid';
+      listCol.id = 'smax-resp-script-list-col';
       listCol.innerHTML = '<div style="grid-column:1/-1;padding:16px;color:var(--sp-text-muted);font-size:12px;">Carregando scripts...</div>';
-      previewCol.innerHTML = '<div id="smax-resp-script-preview-empty">Selecione um script para ver o conteúdo.</div>';
-      useBtn.disabled = true;
-      selectedScript = null;
-      activeSource = 'todos';
+      clearSelection();
+      activeTeam = '';
+      activeView = 'grid';
       activeSubjects = new Set();
       searchInp.value = '';
       subjectCnt.textContent = '';
       subjectCnt.classList.remove('vis');
       subjectBtn.classList.remove('active');
+      if (vtoggle) vtoggle.querySelectorAll('.smax-sp-vtoggle-btn').forEach(b => b.classList.toggle('on', b.dataset.view === 'grid'));
 
       allScripts = await loadScripts();
       buildChips();
@@ -6963,11 +7155,12 @@
       renderList(allScripts);
       searchInp.focus();
 
-      // Evita acúmulo de listeners: remove anterior antes de adicionar
+      // Search input
       if (searchInp._smaxFilterHandler) searchInp.removeEventListener('input', searchInp._smaxFilterHandler);
       searchInp._smaxFilterHandler = () => applyFilter();
       searchInp.addEventListener('input', searchInp._smaxFilterHandler);
 
+      // Use button
       useBtn.onclick = () => {
         if (!selectedScript) return;
         setRespSolutionData(Utils.sanitizeRichText(selectedScript.conteudo_bruto) || '');
@@ -6980,12 +7173,12 @@
       const closePicker = () => {
         modal.dataset.open = 'false';
         subjectPanel.classList.remove('open');
+        hideHoverCard();
         if (modal._smaxOutsideHandler) { document.removeEventListener('mousedown', modal._smaxOutsideHandler); modal._smaxOutsideHandler = null; }
       };
 
       closeBtn.onclick = closePicker;
 
-      // Click-outside-to-close persistente (não usa {once:true} que quebrava após clique interno)
       if (modal._smaxOutsideHandler) document.removeEventListener('mousedown', modal._smaxOutsideHandler);
       modal._smaxOutsideHandler = (e) => {
         const box = modal.querySelector('#smax-resp-script-box');
@@ -7002,23 +7195,26 @@
       if (modal.dataset.open === 'true') { modal.dataset.open = 'false'; return; }
       modal.dataset.open = 'true';
 
-      // Update title to reflect disc mode
-      const titleEl = modal.querySelector('#smax-resp-script-box-header h4');
-      if (titleEl) titleEl.textContent = '💬 Scripts de Discussão';
+      // Adapta header para modo discussão
+      const titleEl = modal.querySelector('.smax-sp-header-left h4');
+      if (titleEl) titleEl.textContent = 'Scripts de Discussão';
 
-      // Reset filter bar UI for disc mode (chips not applicable)
+      // Oculta controles que não se aplicam ao disc picker
       const teamChipsContDisc = modal.querySelector('#smax-resp-sp-team-chips');
       if (teamChipsContDisc) teamChipsContDisc.innerHTML = '';
       const subjectBtnDisc = modal.querySelector('#smax-resp-sp-subjects-btn');
       if (subjectBtnDisc) subjectBtnDisc.style.display = 'none';
+      const vtoggle = modal.querySelector('#smax-resp-sp-vtoggle');
+      if (vtoggle) vtoggle.style.display = 'none';
       const countNDisc = modal.querySelector('#smax-resp-sp-count-n');
       const countSepDisc = modal.querySelector('#smax-resp-sp-count-sep');
       const countTotDisc = modal.querySelector('#smax-resp-sp-count-tot');
 
       const listCol    = modal.querySelector('#smax-resp-script-list-col');
       const previewCol = modal.querySelector('#smax-resp-script-preview-col');
+      const previewEmpty = modal.querySelector('#smax-resp-script-preview-empty');
+      const ppContent  = modal.querySelector('#smax-resp-sp-pp-content');
       const searchInp  = modal.querySelector('#smax-resp-script-search-inp');
-      const countEl    = modal.querySelector('#smax-resp-script-count');
       const useBtn     = modal.querySelector('#smax-resp-script-use-btn');
       const closeBtn   = modal.querySelector('#smax-resp-script-modal-close');
 
@@ -7028,7 +7224,15 @@
       const selectScript = (s) => {
         selectedScript = s;
         useBtn.disabled = false;
-        previewCol.innerHTML = Utils.sanitizeRichText(s.html) || '<em>Sem conteúdo.</em>';
+        // Usa o preview panel do novo layout se disponível
+        if (ppContent) {
+          if (previewEmpty) previewEmpty.style.display = 'none';
+          ppContent.classList.add('vis');
+          ppContent.innerHTML = `
+            <div class="smax-sp-pp-title">${Utils.escapeHtml(s.title || '')}</div>
+            <div><span class="smax-sp-pp-label">Conteúdo</span>
+            <div class="smax-sp-pp-solution">${Utils.sanitizeRichText(s.html) || '<em>Sem conteúdo.</em>'}</div></div>`;
+        }
         listCol.querySelectorAll('.smax-resp-script-row').forEach(r => {
           r.classList.toggle('selected', r.dataset.idx === String(allScripts.indexOf(s)));
         });
@@ -7042,7 +7246,7 @@
         listCol.innerHTML = filtered.map((s) => {
           const stripped = (s.html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
           const badge = s._shared
-            ? `<span style="font-size:9px;padding:1px 4px;border-radius:999px;background:var(--sp-primary-bg);color:var(--sp-accent);border:1px solid var(--sp-accent);">☁️</span>`
+            ? `<span style="font-size:9px;padding:1px 4px;border-radius:999px;background:var(--sp-primary-bg);color:#2563eb;border:1px solid #2563eb;">☁️</span>`
             : '';
           const origIdx = allScripts.indexOf(s);
           return `<div class="smax-resp-script-row${selectedScript === s ? ' selected' : ''}" data-idx="${origIdx}">
@@ -7062,7 +7266,6 @@
           if (countSepDisc) { countSepDisc.style.display = filtered.length < total ? '' : 'none'; }
           if (countTotDisc) { countTotDisc.style.display = filtered.length < total ? '' : 'none'; countTotDisc.textContent = total; }
         }
-        if (countEl) countEl.textContent = filtered.length < total ? `${filtered.length} de ${total}` : `${total} scripts`;
       };
 
       const applyFilter = (q) => {
@@ -7076,10 +7279,17 @@
         renderList(filtered);
       };
 
-      // Load
-      listCol.classList.remove('grid-view'); // disc picker uses legacy list rows, not grid cards
+      // Load — disc picker usa lista simples, não grid
+      listCol.className = '';
+      listCol.id = 'smax-resp-script-list-col';
+      listCol.style.display = 'flex';
+      listCol.style.flexDirection = 'column';
+      listCol.style.width = '300px';
+      listCol.style.flexShrink = '0';
+      listCol.style.borderRight = '1px solid var(--sp-border)';
       listCol.innerHTML = '<div style="padding:16px;color:var(--sp-text-muted);font-size:12px;">Carregando scripts de discussão...</div>';
-      previewCol.innerHTML = '<div id="smax-resp-script-preview-empty">Selecione um script para ver o conteúdo.</div>';
+      if (previewEmpty) previewEmpty.style.display = '';
+      if (ppContent) { ppContent.classList.remove('vis'); ppContent.innerHTML = ''; }
       useBtn.disabled = true;
       selectedScript = null;
       searchInp.value = '';
@@ -7099,7 +7309,6 @@
         if (discEditor) {
           discEditor.innerHTML = Utils.sanitizeRichText(selectedScript.html) || '';
         }
-        // Preencher selects "Para" e "Objetivo" se o script tiver valores definidos
         if (selectedScript.commentTo) {
           const toSelect = backdrop?.querySelector('#smax-resp-new-disc-to');
           if (toSelect) toSelect.value = selectedScript.commentTo;
@@ -7113,9 +7322,11 @@
 
       const closePicker = () => {
         modal.dataset.open = 'false';
-        // Restore title and subjects button for next openScriptPicker call
-        if (titleEl) titleEl.textContent = '📋 Scripts de Respostas';
+        // Restaura estilos para próximo uso do sol picker
+        if (titleEl) titleEl.textContent = 'Scripts de Respostas';
         if (subjectBtnDisc) subjectBtnDisc.style.display = '';
+        if (vtoggle) vtoggle.style.display = '';
+        listCol.style.cssText = ''; // limpa estilos inline do disc mode
         if (modal._smaxOutsideHandler) { document.removeEventListener('mousedown', modal._smaxOutsideHandler); modal._smaxOutsideHandler = null; }
       };
 
@@ -8333,8 +8544,7 @@
                 <a id="smax-resp-ticket-id-link" href="#" target="_blank" style="font-size:16px;font-weight:700;color:var(--sp-header-fg);text-decoration:none;white-space:nowrap;letter-spacing:.01em;">—</a>
                 <span id="smax-resp-detail-global-badge" style="display:none;flex-shrink:0;"></span>
                 <span id="smax-resp-vip-badge" style="display:none;padding:2px 7px;border-radius:999px;background:#facc15;color:#854d0e;font-size:10px;font-weight:700;flex-shrink:0;">VIP</span>
-                <span id="smax-resp-opener" style="font-size:13px;color:var(--sp-header-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:280px;"></span>
-                <button id="smax-resp-requester-data-btn" type="button" title="Dados completos do solicitante" style="display:none;padding:2px 8px;border-radius:5px;border:1px solid var(--sp-border);background:var(--sp-surface-2);color:var(--sp-header-sub);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Dados</button>
+                <a id="smax-resp-opener" href="javascript:void(0)" title="Clique para ver dados do solicitante" style="font-size:13px;color:var(--sp-header-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:280px;text-decoration:none;cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.4);"></a>
                 <span id="smax-resp-requester-title" style="display:none;font-size:13px;color:var(--sp-header-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:240px;font-style:italic;"></span>
                 <span id="smax-resp-location-label" style="display:none;font-size:13px;color:var(--sp-header-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer;" title="Clique para ver nome completo"></span>
                 <span id="smax-resp-process-label" style="display:none;font-size:12px;color:var(--sp-header-fg);font-family:monospace;font-weight:600;white-space:nowrap;flex-shrink:0;opacity:.92;"></span>
@@ -8498,8 +8708,18 @@
           <div id="smax-resp-script-modal">
             <div id="smax-resp-script-box">
               <div id="smax-resp-script-box-header">
-                <h4>📋 Scripts de Respostas</h4>
-                <button id="smax-resp-script-modal-close" style="border:none;background:var(--sp-header-btn);color:var(--sp-header-fg);font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer;flex-shrink:0;">✕</button>
+                <div class="smax-sp-header-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  <h4>Scripts de Respostas</h4>
+                </div>
+                <div class="smax-sp-header-right">
+                  <div class="smax-sp-vtoggle" id="smax-resp-sp-vtoggle">
+                    <button class="smax-sp-vtoggle-btn on" data-view="grid" type="button" title="Grade">▦</button>
+                    <button class="smax-sp-vtoggle-btn" data-view="rows" type="button" title="Linhas">☰</button>
+                    <button class="smax-sp-vtoggle-btn" data-view="tiles" type="button" title="Mosaico">▧</button>
+                  </div>
+                  <button id="smax-resp-script-modal-close" type="button">✕</button>
+                </div>
               </div>
               <div id="smax-resp-script-filter-bar">
                 <div id="smax-resp-script-search-wrap">
@@ -8520,9 +8740,13 @@
                 </div>
               </div>
               <div id="smax-resp-script-split">
-                <div id="smax-resp-script-list-col" class="grid-view"></div>
+                <div id="smax-resp-script-list-col" class="view-grid"></div>
                 <div id="smax-resp-script-preview-col">
-                  <div id="smax-resp-script-preview-empty">Selecione um script para ver o conteúdo.</div>
+                  <div id="smax-resp-script-preview-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Selecione um script para ver o conteúdo</span>
+                  </div>
+                  <div class="smax-sp-pp-content" id="smax-resp-sp-pp-content"></div>
                 </div>
               </div>
               <div id="smax-resp-script-box-footer">
@@ -8530,6 +8754,7 @@
                 <button id="smax-resp-script-use-btn" disabled>Usar script</button>
               </div>
             </div>
+            <div class="smax-sp-hover-card" id="smax-resp-sp-hover-card"></div>
           </div>
           <!-- Discussion Expand Modal (overlay) -->
           <div id="smax-disc-modal">
@@ -8649,8 +8874,9 @@
         }, 0);
       });
 
-      // Botão "Dados" — popup flutuante com dados completos do solicitante
-      backdrop.querySelector('#smax-resp-requester-data-btn')?.addEventListener('click', async function () {
+      // Nome do solicitante clicável — popup flutuante com dados completos
+      backdrop.querySelector('#smax-resp-opener')?.addEventListener('click', async function (e) {
+        e.preventDefault();
         const personId = this.dataset.personId;
         const personName = this.dataset.personName || '';
         if (!personId) return;
@@ -8679,14 +8905,19 @@
         setTimeout(() => document.addEventListener('click', closePopup, true), 0);
 
         try {
-          // Busca dados completos da pessoa via API
+          // Busca dados completos da pessoa via API (usa layout comprovado + campos extras)
           const _tid = ApiClient.getTenantId() || SMAX_TENANT_ID;
-          const layout = 'Id,Name,FirstName,LastName,Email,Upn,Phone,CellPhone,Title,EmployeeNumber,Location,OrganizationalGroup,IsVIP,IsSuperAdmin';
+          const layout = 'Id,Name,FirstName,LastName,Email,Upn,Title,EmployeeNumber,Location,OrganizationalGroup,IsVIP,OfficePhoneNumber,MobilePhoneNumber';
           const url = `/rest/${_tid}/ems/Person/${encodeURIComponent(personId)}?layout=${layout}&TENANTID=${_tid}`;
           const res = await fetch(url, { credentials: 'include' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
-          const p = data?.entity?.properties || data?.properties || {};
+          // Handle all known SMAX response formats:
+          // Single entity: { properties: {...} }
+          // List wrapper:  { entities: [{ properties: {...} }] }
+          const p = data?.properties
+            || (Array.isArray(data?.entities) && data.entities[0]?.properties)
+            || {};
 
           const row = (label, value) => value ? `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--sp-border);">
             <span style="font-weight:600;color:var(--sp-text-muted);min-width:90px;flex-shrink:0;">${label}</span>
@@ -8697,15 +8928,24 @@
           const title = p.Title || '';
           const empNum = p.EmployeeNumber || '';
           const email = p.Email || p.Upn || '';
-          const phone = p.Phone || '';
-          const cell = p.CellPhone || '';
-          const location = p.Location || '';
-          const org = p.OrganizationalGroup || '';
+          const phone = p.OfficePhoneNumber || p.Phone || '';
+          const cell = p.MobilePhoneNumber || p.CellPhone || '';
+          const loc = typeof p.Location === 'object' ? (p.Location?.Name || p.Location?.DisplayLabel || '') : (p.Location || '');
+          const org = typeof p.OrganizationalGroup === 'object' ? (p.OrganizationalGroup?.Name || p.OrganizationalGroup?.DisplayLabel || '') : (p.OrganizationalGroup || '');
           const isVip = !!p.IsVIP;
+
+          // Also refresh peopleCache with the fresh data
+          if (p.Id || personId) {
+            DataRepository.peopleCache.set(String(p.Id || personId), {
+              id: String(p.Id || personId), name, upn: p.Upn || '', email: p.Email || '',
+              isVip, employeeNumber: empNum, firstName: p.FirstName || '', lastName: p.LastName || '',
+              location: loc, title
+            });
+          }
 
           popup.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-              <div style="font-weight:700;font-size:14px;color:var(--sp-text);">👤 ${Utils.escapeHtml(name)}</div>
+              <div style="font-weight:700;font-size:14px;color:var(--sp-text);">${Utils.escapeHtml(name)}</div>
               ${isVip ? '<span style="padding:2px 7px;border-radius:999px;background:#facc15;color:#854d0e;font-size:10px;font-weight:700;">VIP</span>' : ''}
             </div>
             <div style="display:flex;flex-direction:column;gap:0;">
@@ -8714,13 +8954,23 @@
               ${row('E-mail', email)}
               ${row('Telefone', phone)}
               ${row('Celular', cell)}
-              ${row('Localização', location)}
+              ${row('Localização', loc)}
               ${row('Organização', org)}
             </div>
             ${!title && !empNum && !email ? '<div style="color:var(--sp-text-muted);text-align:center;padding:6px 0;font-style:italic;">Nenhum dado adicional disponível.</div>' : ''}
           `;
         } catch (err) {
-          popup.innerHTML = `<div style="color:var(--sp-danger-text);padding:8px 0;">Erro ao buscar dados: ${Utils.escapeHtml(err.message)}</div>`;
+          console.warn('[SMAX] Erro ao buscar dados da pessoa:', err);
+          // Fallback: mostra dados do cache se disponíveis
+          const cached = DataRepository.peopleCache.get(personId);
+          if (cached && (cached.title || cached.employeeNumber || cached.email)) {
+            const row = (label, value) => value ? `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--sp-border);"><span style="font-weight:600;color:var(--sp-text-muted);min-width:90px;flex-shrink:0;">${label}</span><span style="color:var(--sp-text);word-break:break-word;">${Utils.escapeHtml(String(value))}</span></div>` : '';
+            popup.innerHTML = `<div style="font-weight:700;font-size:14px;color:var(--sp-text);margin-bottom:10px;">${Utils.escapeHtml(cached.name || personName)}</div>
+              <div style="display:flex;flex-direction:column;gap:0;">${row('Cargo', cached.title)}${row('Matrícula', cached.employeeNumber)}${row('E-mail', cached.email || cached.upn)}</div>
+              <div style="color:var(--sp-text-muted);font-size:10px;font-style:italic;margin-top:6px;">Dados do cache (API indisponível)</div>`;
+          } else {
+            popup.innerHTML = `<div style="color:var(--sp-danger-text);padding:8px 0;">Erro ao buscar dados: ${Utils.escapeHtml(err.message)}</div>`;
+          }
         }
       });
 
