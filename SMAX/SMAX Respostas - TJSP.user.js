@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.9
+// @version      1.10
 // @description  Módulo de respostas em lote para o SMAX TJSP: respostas, scripts, discussões e consulta de processos no eProc
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -33,7 +33,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.9';
+  const SMAX_TOOLKIT_VERSION = '1.10';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#60a5fa;font-weight:bold;font-size:13px;');
 
@@ -2315,8 +2315,17 @@
       }
     };
 
+    const buildPeopleFilter = () => {
+      const ids = new Set();
+      try {
+        for (const t of TeamsConfig.getTeams()) {
+          if (Array.isArray(t.gseRules)) t.gseRules.forEach(r => { if (r.id) ids.add(r.id); });
+        }
+      } catch (_) { /* ignore */ }
+      if (!ids.size) return '(PersonToGroup[Id in (51642955)])';
+      return `(PersonToGroup[Id in (${[...ids].join(',')})])`;
+    };
     const basePeopleParams = {
-      filter: '(PersonToGroup[Id in (51642955)])',
       layout: 'Name,Avatar,Location,IsVIP,OrganizationalGroup,Upn,IsDeleted,FirstName,LastName,EmployeeNumber,Email,Title',
       meta: 'totalCount',
       order: 'Name asc',
@@ -2344,7 +2353,7 @@
     const fetchPeoplePage = async (skip = 0) => {
       const payload = await ApiClient.request('ems/Person', {
         method: 'GET',
-        searchParams: toQueryParams(basePeopleParams, { skip }),
+        searchParams: toQueryParams(basePeopleParams, { skip, filter: buildPeopleFilter() }),
         includeTenantParam: true
       });
       ingestPersonListPayload(payload);
@@ -2862,7 +2871,23 @@
       // os comentários de sistema seriam removidos e o servidor rejeita com
       // "Comentários do sistema não podem ser alterados" (systemCommentsValidation).
       const allComments = [...existingComments, newComment];
-      const discProps = { Id: String(ticketId), Comments: JSON.stringify({ Comment: allComments }) };
+      let commentsJson = JSON.stringify({ Comment: allComments });
+
+      // Se o payload exceder o limite seguro, reduzir tamanho substituindo base64 de imagens
+      // de comentários antigos por um pixel transparente (o SMAX trunca campos Comments muito grandes).
+      const COMMENTS_SAFE_LIMIT = 60000;
+      if (commentsJson.length > COMMENTS_SAFE_LIMIT) {
+        console.warn('[SMAX] postDiscussion: payload grande (' + commentsJson.length + ' chars), compactando imagens de comentários antigos.');
+        const TINY_PX = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        const slimExisting = existingComments.map(c => {
+          const body = c.CommentBody || '';
+          if (body.length < 500) return c;
+          return { ...c, CommentBody: body.replace(/data:image\/[^;]+;base64,[A-Za-z0-9+\/=]{100,}/g, TINY_PX) };
+        });
+        commentsJson = JSON.stringify({ Comment: [...slimExisting, newComment] });
+        console.info('[SMAX] postDiscussion: payload compactado →', commentsJson.length, 'chars');
+      }
+      const discProps = { Id: String(ticketId), Comments: commentsJson };
       if (lastUpdateTime) discProps.LastUpdateTime = lastUpdateTime;
       const body = {
         entities: [{ entity_type: 'Request', properties: discProps }],
@@ -8630,6 +8655,7 @@
       // --- Equipes ---
       if (Array.isArray(data.teams) && data.teams.length) {
         TeamsConfig.setSharedTeams(data.teams);
+        DataRepository.ensurePeopleLoaded({ force: true });
         _listeners.forEach(fn => { try { fn(data.teams); } catch {} });
         log.push({ key: 'Equipes', detail: `${data.teams.length} equipe(s): ${data.teams.map(t => t.name || t.id).join(', ')}`, ok: true });
       } else if (data.teams !== undefined) {
