@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.27
+// @version      1.28
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.27';
+  const SMAX_TOOLKIT_VERSION = '1.28';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -2656,17 +2656,18 @@
     };
 
     const searchPeopleRemote = async (term) => {
-      const q = (term || '').trim().replace(/'/g, '');
+      const q = (term || '').trim().replace(/'/g, "''");
       if (!q || q.length < 3) return [];
-      // Busca pela primeira palavra significativa (≥3 chars) para amplitude máxima.
-      const words = q.split(/\s+/).filter(w => w.length >= 3);
-      const searchWord = (words[0] || q).toUpperCase();
-      const filterExpr = `(Name like '%${searchWord}%')`;
+      // SMAX não suporta LIKE com % para Person — usa busca por range (prefixo),
+      // mesmo padrão usado em searchPeopleByPrefix.
+      const upper = q.toUpperCase();
+      const lastChar = upper.charAt(upper.length - 1);
+      const upperBound = upper.slice(0, -1) + String.fromCharCode(lastChar.charCodeAt(0) + 1);
       try {
         const payload = await ApiClient.request('ems/Person', {
           method: 'GET',
           searchParams: {
-            filter: filterExpr,
+            filter: `Name >= '${upper}' and Name < '${upperBound}'`,
             layout: 'Name,Upn,Email,FirstName,LastName,Title',
             size: '30',
             skip: '0',
