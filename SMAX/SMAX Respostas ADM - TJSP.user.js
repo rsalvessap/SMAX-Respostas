@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.30
+// @version      1.31
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.30';
+  const SMAX_TOOLKIT_VERSION = '1.31';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -837,43 +837,43 @@
 .smax-sp-pp-solution { font-size:13px; color:var(--sp-text-muted); line-height:1.65; background:var(--sp-surface-2); border:1px solid var(--sp-border); border-radius:8px; padding:13px; white-space:pre-wrap; max-height:300px; overflow-y:auto; }
 
 /* Grid view (default) */
-#smax-resp-script-list-col.view-grid { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)) !important; gap:12px !important; padding:14px !important; align-content:start !important; overflow-y:auto !important; }
-.smax-sp-script-card { background:var(--sp-surface-2,#1d2839); border:1.5px solid var(--sp-border,#334155); border-radius:10px; padding:14px 16px 14px 18px; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative; min-height:94px; display:flex; flex-direction:column; gap:5px; }
-.smax-sp-script-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--smax-stripe,#94a3b8); border-radius:10px 0 0 10px; }
-.smax-sp-script-card:hover { border-color:var(--smax-stripe,var(--sp-accent)); background:var(--sp-primary-bg); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
-.smax-sp-script-card.selected { border-color:var(--sp-accent); background:var(--sp-primary-bg); box-shadow:0 0 0 3px var(--sp-ring); }
-.smax-sp-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
-.smax-sp-card-badge { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:10px; color:#fff; white-space:nowrap; }
-.smax-sp-card-title { font-size:13px; font-weight:600; color:var(--sp-text,#e4ecf6); line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; }
-.smax-sp-card-preview { font-size:11.5px; color:var(--sp-text-muted,#9aa7b8); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:2px; }
+#smax-resp-script-list-col.view-grid { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)) !important; gap:12px !important; padding:14px !important; align-content:start !important; overflow-y:auto !important; width:auto !important; flex-shrink:1 !important; border-right:none !important; flex-direction:unset !important; }
+#smax-resp-script-list-col .smax-sp-script-card { background:var(--sp-surface-2,#1d2839) !important; border:1.5px solid var(--sp-border,#334155) !important; border-radius:10px !important; padding:14px 16px 14px 18px !important; cursor:pointer; transition:border-color .13s,background .13s,box-shadow .13s,transform .1s; position:relative !important; min-height:94px !important; display:flex !important; flex-direction:column !important; gap:5px !important; box-sizing:border-box !important; }
+#smax-resp-script-list-col .smax-sp-script-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--smax-stripe,#94a3b8); border-radius:10px 0 0 10px; }
+#smax-resp-script-list-col .smax-sp-script-card:hover { border-color:var(--smax-stripe,var(--sp-accent)) !important; background:var(--sp-primary-bg) !important; transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+#smax-resp-script-list-col .smax-sp-script-card.selected { border-color:var(--sp-accent) !important; background:var(--sp-primary-bg) !important; box-shadow:0 0 0 3px var(--sp-ring); }
+#smax-resp-script-list-col .smax-sp-card-top { display:flex !important; align-items:center; justify-content:space-between; margin-bottom:3px; }
+#smax-resp-script-list-col .smax-sp-card-badge { font-size:9.5px !important; font-weight:700; padding:2px 7px !important; border-radius:10px; color:#fff !important; white-space:nowrap; }
+#smax-resp-script-list-col .smax-sp-card-title { font-size:13px !important; font-weight:600; color:var(--sp-text,#e4ecf6) !important; line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; }
+#smax-resp-script-list-col .smax-sp-card-preview { font-size:11.5px !important; color:var(--sp-text-muted,#9aa7b8) !important; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:2px; }
 .smax-sp-script-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:3px; }
 .smax-sp-script-tag { font-size:10px; padding:2px 6px; border-radius:4px; background:var(--sp-border,#334155); color:var(--sp-text-muted,#9aa7b8); }
 
 /* Rows view */
-#smax-resp-script-list-col.view-rows { display:flex; flex-direction:column; padding:0; overflow-y:auto; }
-.smax-sp-script-row { display:flex; align-items:flex-start; gap:12px; padding:12px 18px; border-bottom:1px solid var(--sp-border); cursor:pointer; position:relative; transition:background .1s; }
-.smax-sp-script-row:hover { background:var(--sp-primary-bg); }
-.smax-sp-script-row::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:0 3px 3px 0; background:transparent; transition:background .1s; }
-.smax-sp-script-row:hover::before { background:var(--smax-stripe,var(--sp-accent)); }
-.smax-sp-script-row.selected { background:var(--sp-primary-bg); }
-.smax-sp-script-row.selected::before { background:var(--smax-stripe,var(--sp-accent)); }
-.smax-sp-row-info { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
-.smax-sp-row-team { font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; color:#fff; display:inline-block; align-self:flex-start; }
-.smax-sp-row-title { font-size:13.5px; font-weight:600; color:var(--sp-text); line-height:1.5; word-break:break-word; }
-.smax-sp-row-preview { font-size:12px; color:var(--sp-text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.smax-sp-row-chevron { color:var(--sp-text-muted); opacity:0; transition:opacity .1s; flex-shrink:0; margin-top:4px; }
-.smax-sp-script-row:hover .smax-sp-row-chevron { opacity:.5; }
+#smax-resp-script-list-col.view-rows { display:flex !important; flex-direction:column !important; padding:0 !important; overflow-y:auto !important; width:auto !important; flex-shrink:1 !important; border-right:none !important; }
+#smax-resp-script-list-col .smax-sp-script-row { display:flex !important; align-items:flex-start !important; gap:12px !important; padding:12px 18px !important; border-bottom:1px solid var(--sp-border) !important; cursor:pointer; position:relative !important; transition:background .1s; box-sizing:border-box !important; min-height:60px !important; }
+#smax-resp-script-list-col .smax-sp-script-row:hover { background:var(--sp-primary-bg) !important; }
+#smax-resp-script-list-col .smax-sp-script-row::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:0 3px 3px 0; background:transparent; transition:background .1s; }
+#smax-resp-script-list-col .smax-sp-script-row:hover::before { background:var(--smax-stripe,var(--sp-accent)); }
+#smax-resp-script-list-col .smax-sp-script-row.selected { background:var(--sp-primary-bg) !important; }
+#smax-resp-script-list-col .smax-sp-script-row.selected::before { background:var(--smax-stripe,var(--sp-accent)); }
+#smax-resp-script-list-col .smax-sp-row-info { display:flex !important; flex-direction:column !important; gap:4px !important; min-width:0; flex:1; }
+#smax-resp-script-list-col .smax-sp-row-team { font-size:10px !important; font-weight:700; padding:2px 8px !important; border-radius:10px; color:#fff !important; display:inline-block !important; align-self:flex-start; }
+#smax-resp-script-list-col .smax-sp-row-title { font-size:13.5px !important; font-weight:600; color:var(--sp-text) !important; line-height:1.5; word-break:break-word; }
+#smax-resp-script-list-col .smax-sp-row-preview { font-size:12px !important; color:var(--sp-text-muted) !important; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#smax-resp-script-list-col .smax-sp-row-chevron { color:var(--sp-text-muted); opacity:0; transition:opacity .1s; flex-shrink:0; margin-top:4px; }
+#smax-resp-script-list-col .smax-sp-script-row:hover .smax-sp-row-chevron { opacity:.5; }
 
 /* Tiles view (mosaic) */
-#smax-resp-script-list-col.view-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; padding:14px; align-content:start; overflow-y:auto; }
-.smax-sp-tile { border-radius:10px; border:1.5px solid var(--sp-border); display:flex; flex-direction:column; overflow:hidden; cursor:pointer; transition:border-color .13s,transform .1s,box-shadow .13s; }
-.smax-sp-tile:hover { border-color:var(--smax-stripe,var(--sp-accent)); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
-.smax-sp-tile.selected { border-color:var(--sp-accent); box-shadow:0 0 0 3px var(--sp-ring); }
-.smax-sp-tile-cap { padding:10px 12px; position:relative; display:flex; flex-direction:column; gap:4px; }
-.smax-sp-tile-cap-bg { position:absolute; inset:0; opacity:.1; }
-.smax-sp-tile-badge { font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:10px; color:#fff; display:inline-block; align-self:flex-start; position:relative; z-index:1; }
-.smax-sp-tile-body { padding:9px 12px 11px; flex:1; background:var(--sp-surface); }
-.smax-sp-tile-title { font-size:12px; font-weight:600; color:var(--sp-text); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+#smax-resp-script-list-col.view-tiles { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)) !important; gap:12px !important; padding:14px !important; align-content:start !important; overflow-y:auto !important; width:auto !important; flex-shrink:1 !important; border-right:none !important; flex-direction:unset !important; }
+#smax-resp-script-list-col .smax-sp-tile { border-radius:10px !important; border:1.5px solid var(--sp-border) !important; display:flex !important; flex-direction:column !important; overflow:hidden; cursor:pointer; transition:border-color .13s,transform .1s,box-shadow .13s; min-height:80px !important; box-sizing:border-box !important; }
+#smax-resp-script-list-col .smax-sp-tile:hover { border-color:var(--smax-stripe,var(--sp-accent)) !important; transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+#smax-resp-script-list-col .smax-sp-tile.selected { border-color:var(--sp-accent) !important; box-shadow:0 0 0 3px var(--sp-ring); }
+#smax-resp-script-list-col .smax-sp-tile-cap { padding:10px 12px !important; position:relative; display:flex !important; flex-direction:column; gap:4px; }
+#smax-resp-script-list-col .smax-sp-tile-cap-bg { position:absolute; inset:0; opacity:.1; }
+#smax-resp-script-list-col .smax-sp-tile-badge { font-size:9.5px !important; font-weight:700; padding:2px 6px !important; border-radius:10px; color:#fff !important; display:inline-block !important; align-self:flex-start; position:relative; z-index:1; }
+#smax-resp-script-list-col .smax-sp-tile-body { padding:9px 12px 11px !important; flex:1; background:var(--sp-surface); }
+#smax-resp-script-list-col .smax-sp-tile-title { font-size:12px !important; font-weight:600; color:var(--sp-text) !important; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 
 /* Hover card */
 .smax-sp-hover-card { position:fixed; width:300px; background:var(--sp-surface); border:1.5px solid var(--sp-border); border-radius:12px; padding:14px; box-shadow:0 12px 36px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08); z-index:999999; pointer-events:none; opacity:0; transform:translateY(4px); transition:opacity .15s,transform .15s; }
@@ -6897,8 +6897,10 @@
             if (r1.ok) {
               fromDB = await r1.json();
               embedOk = true;
+              const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(v);
               for (const s of fromDB) {
-                s._team = s.equipes?.nome || 'Remoto';
+                const eqNome = s.equipes?.nome;
+                s._team = (eqNome && !isUUID(eqNome)) ? eqNome : 'Remoto';
                 delete s.equipes; // limpa campo de embed
               }
             }
@@ -6917,7 +6919,7 @@
               try {
                 const rEq = await fetch(`${SMAX_SB_URL}/rest/v1/${tbl}?select=id,nome`, { headers: hdrs });
                 if (rEq.ok) {
-                  for (const row of await rEq.json()) eqMap.set(row.id, row.nome || row.id);
+                  for (const row of await rEq.json()) if (row.nome) eqMap.set(row.id, row.nome);
                   break;
                 }
               } catch (_) { /* tabela não existe, tenta próxima */ }
@@ -7074,11 +7076,11 @@
           const origIdx = allScripts.indexOf(s);
           const title = s.nome || s.title || '(sem nome)';
           const isSelected = selectedScript === s;
-          return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
-            <div class="smax-sp-card-top">
-              <span class="smax-sp-card-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
+          return `<div class="smax-sp-script-card${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};min-height:94px;padding:14px 16px 14px 18px;display:flex;flex-direction:column;gap:5px;box-sizing:border-box;position:relative;">
+            <div class="smax-sp-card-top" style="display:flex;align-items:center;margin-bottom:3px;">
+              <span class="smax-sp-card-badge" style="background:${teamColor};font-size:9.5px;padding:2px 7px;border-radius:10px;color:#fff;font-weight:700;">${Utils.escapeHtml(teamName)}</span>
             </div>
-            <div class="smax-sp-card-title">${Utils.escapeHtml(title)}</div>
+            <div class="smax-sp-card-title" style="font-size:13px;font-weight:600;color:var(--sp-text,#e4ecf6);line-height:1.45;">${Utils.escapeHtml(title)}</div>
           </div>`;
         }).join('');
       };
@@ -7091,11 +7093,11 @@
           const title = s.nome || s.title || '(sem nome)';
           const preview = (s.conteudo_bruto || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
           const isSelected = selectedScript === s;
-          return `<div class="smax-sp-script-row${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
-            <div class="smax-sp-row-info">
-              <span class="smax-sp-row-team" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
-              <div class="smax-sp-row-title">${Utils.escapeHtml(title)}</div>
-              ${preview ? `<div class="smax-sp-row-preview">${Utils.escapeHtml(preview)}</div>` : ''}
+          return `<div class="smax-sp-script-row${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};display:flex;align-items:flex-start;gap:12px;padding:12px 18px;min-height:60px;box-sizing:border-box;position:relative;">
+            <div class="smax-sp-row-info" style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
+              <span class="smax-sp-row-team" style="background:${teamColor};font-size:10px;padding:2px 8px;border-radius:10px;color:#fff;font-weight:700;display:inline-block;align-self:flex-start;">${Utils.escapeHtml(teamName)}</span>
+              <div class="smax-sp-row-title" style="font-size:13.5px;font-weight:600;color:var(--sp-text,#e4ecf6);line-height:1.5;">${Utils.escapeHtml(title)}</div>
+              ${preview ? `<div class="smax-sp-row-preview" style="font-size:12px;color:var(--sp-text-muted,#9aa7b8);line-height:1.4;">${Utils.escapeHtml(preview)}</div>` : ''}
             </div>
             <svg class="smax-sp-row-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>`;
@@ -7109,13 +7111,13 @@
           const origIdx = allScripts.indexOf(s);
           const title = s.nome || s.title || '(sem nome)';
           const isSelected = selectedScript === s;
-          return `<div class="smax-sp-tile${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};">
-            <div class="smax-sp-tile-cap">
-              <div class="smax-sp-tile-cap-bg" style="background:${teamColor};"></div>
-              <span class="smax-sp-tile-badge" style="background:${teamColor};">${Utils.escapeHtml(teamName)}</span>
+          return `<div class="smax-sp-tile${isSelected ? ' selected' : ''}" data-idx="${origIdx}" style="--smax-stripe:${teamColor};display:flex;flex-direction:column;min-height:80px;box-sizing:border-box;">
+            <div class="smax-sp-tile-cap" style="padding:10px 12px;position:relative;display:flex;flex-direction:column;gap:4px;">
+              <div class="smax-sp-tile-cap-bg" style="background:${teamColor};position:absolute;inset:0;opacity:.1;"></div>
+              <span class="smax-sp-tile-badge" style="background:${teamColor};font-size:9.5px;padding:2px 6px;border-radius:10px;color:#fff;font-weight:700;display:inline-block;align-self:flex-start;position:relative;z-index:1;">${Utils.escapeHtml(teamName)}</span>
             </div>
-            <div class="smax-sp-tile-body">
-              <div class="smax-sp-tile-title">${Utils.escapeHtml(title)}</div>
+            <div class="smax-sp-tile-body" style="padding:9px 12px 11px;flex:1;">
+              <div class="smax-sp-tile-title" style="font-size:12px;font-weight:600;color:var(--sp-text,#e4ecf6);">${Utils.escapeHtml(title)}</div>
             </div>
           </div>`;
         }).join('');
@@ -7123,8 +7125,9 @@
 
       // — Render dispatch —
       const renderList = (filtered) => {
-        // Set view class
+        // Set view class + limpa inline styles residuais
         listCol.className = '';
+        listCol.removeAttribute('style');
         listCol.id = 'smax-resp-script-list-col';
         listCol.classList.add('view-' + activeView);
 
@@ -7190,14 +7193,8 @@
           return '';
         };
 
-        // Trunca UUIDs para exibição legível nos chips
-        const chipLabel = (name) => {
-          if (/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(name)) return 'Eq. ' + name.slice(0, 8);
-          return name;
-        };
-
         teamChipsCont.innerHTML = `<button class="smax-sp-chip${!activeTeam ? ' on' : ''}" data-team="" type="button">Todos</button>` +
-          teams.map(t => `<button class="smax-sp-chip${activeTeam === t ? ' on' : ''}" data-team="${Utils.escapeHtml(t)}" type="button" title="${Utils.escapeHtml(t)}" style="${chipStyle(t, activeTeam === t)}">${Utils.escapeHtml(chipLabel(t))}</button>`).join('');
+          teams.map(t => `<button class="smax-sp-chip${activeTeam === t ? ' on' : ''}" data-team="${Utils.escapeHtml(t)}" type="button" title="${Utils.escapeHtml(t)}" style="${chipStyle(t, activeTeam === t)}">${Utils.escapeHtml(t)}</button>`).join('');
 
         teamChipsCont.querySelectorAll('.smax-sp-chip').forEach(chip => {
           chip.addEventListener('click', () => {
@@ -7279,6 +7276,7 @@
       // — Init state —
       listCol.className = 'view-grid';
       listCol.id = 'smax-resp-script-list-col';
+      listCol.removeAttribute('style'); // limpa inline styles (ex: do disc picker)
       listCol.innerHTML = '<div style="grid-column:1/-1;padding:16px;color:var(--sp-text-muted);font-size:12px;">Carregando scripts...</div>';
       clearSelection();
       activeTeam = '';
@@ -7291,6 +7289,7 @@
       if (vtoggle) vtoggle.querySelectorAll('.smax-sp-vtoggle-btn').forEach(b => b.classList.toggle('on', b.dataset.view === 'grid'));
 
       allScripts = await loadScripts();
+      console.log('[SMAX SP] Scripts carregados:', allScripts.length, '| amostra:', allScripts.slice(0, 3).map(s => ({ nome: s.nome, _team: s._team, _local: s._local })));
       buildChips();
       buildSubjects();
       updateCount(allScripts);
