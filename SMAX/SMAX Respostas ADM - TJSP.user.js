@@ -9389,11 +9389,13 @@
         updateSendButton();
       });
       // Extrair chamado para Markdown (ADM exclusivo)
-      backdrop.querySelector('#smax-resp-extract-btn')?.addEventListener('click', () => {
+      backdrop.querySelector('#smax-resp-extract-btn')?.addEventListener('click', async () => {
         const id = activeTicketId;
         if (!id) { setStatusMsg('Selecione um chamado primeiro.', '#fca5a5'); return; }
         const entry = DataRepository.triageCache.get(String(id));
         if (!entry) { setStatusMsg('Dados do chamado não disponíveis.', '#fca5a5'); return; }
+
+        setStatusMsg('📥 Extraindo chamado (buscando imagens)…', '#93c5fd');
 
         const fmtDate = (ts) => {
           if (!ts) return '—';
@@ -9401,32 +9403,125 @@
           return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         };
 
-        let md = `# Chamado #${entry.idText || id}\n\n`;
-        md += `| Campo | Valor |\n|-------|-------|\n`;
-        md += `| Data de abertura | ${fmtDate(entry.createdTs)} |\n`;
-        md += `| Solicitante | ${entry.requestedForName || '—'} |\n`;
-        md += `| Local | ${entry.locationName || '—'} |\n`;
-        md += `\n## Descrição\n\n${(entry.descriptionText || '(sem descrição)').trim()}\n`;
+        // Busca imagem e converte para data URI base64
+        const fetchImageAsDataUri = async (src) => {
+          try {
+            const absUrl = new URL(src, window.location.origin).href;
+            const resp = await fetch(absUrl, { credentials: 'include' });
+            if (!resp.ok) return null;
+            const blob = await resp.blob();
+            if (!blob.type.startsWith('image/')) return null;
+            return await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = () => resolve(null);
+              reader.readAsDataURL(blob);
+            });
+          } catch { return null; }
+        };
 
-        const discs = (entry.discussions || []).filter(d => !d.systemGenerated);
-        if (discs.length) {
-          md += `\n## Discussões\n`;
-          discs.forEach((d, i) => {
-            const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
-            md += `\n### ${i + 1}. ${d.submitterDisplay || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
-            md += `${(d.bodyText || '').trim()}\n`;
-          });
-        } else {
-          md += `\n## Discussões\n\n(nenhuma discussão)\n`;
-        }
+        // Converte todas as <img> de um HTML para base64 inline
+        const embedImagesInHtml = async (html) => {
+          if (!html) return '';
+          const container = document.createElement('div');
+          container.innerHTML = Utils.sanitizeRichText(html);
+          const imgs = container.querySelectorAll('img[src]');
+          await Promise.all(Array.from(imgs).map(async (img) => {
+            const dataUri = await fetchImageAsDataUri(img.getAttribute('src'));
+            if (dataUri) {
+              img.setAttribute('src', dataUri);
+            } else {
+              img.remove();
+            }
+          }));
+          return container.innerHTML;
+        };
 
-        navigator.clipboard.writeText(md).then(() => {
-          setStatusMsg('📥 Chamado extraído e copiado!', '#4ade80');
+        // Extrai texto puro de HTML (fallback para versão text/plain)
+        const htmlToPlainText = (html) => {
+          if (!html) return '';
+          const tmp = document.createElement('div');
+          tmp.innerHTML = html;
+          return (tmp.textContent || tmp.innerText || '').trim();
+        };
+
+        try {
+          // Processa descrição e discussões em paralelo
+          const descHtmlPromise = embedImagesInHtml(entry.descriptionHtml);
+          const discs = (entry.discussions || []).filter(d => !d.systemGenerated);
+          const discHtmlPromises = discs.map(d => embedImagesInHtml(d.bodyHtml || d.bodyRaw));
+          const [descHtmlEmbed, ...discHtmlEmbeds] = await Promise.all([descHtmlPromise, ...discHtmlPromises]);
+
+          // ── Monta versão HTML (com imagens base64 embutidas) ──
+          let html = `<h1>Chamado #${Utils.escapeHtml(entry.idText || id)}</h1>`;
+          html += `<table border="1" cellpadding="4" cellspacing="0">`;
+          html += `<tr><td><b>Data de abertura</b></td><td>${Utils.escapeHtml(fmtDate(entry.createdTs))}</td></tr>`;
+          html += `<tr><td><b>Solicitante</b></td><td>${Utils.escapeHtml(entry.requestedForName || '—')}</td></tr>`;
+          html += `<tr><td><b>Local</b></td><td>${Utils.escapeHtml(entry.locationName || '—')}</td></tr>`;
+          html += `</table>`;
+          html += `<h2>Descrição</h2>`;
+          html += `<div>${descHtmlEmbed || Utils.escapeHtml(entry.descriptionText || '(sem descrição)')}</div>`;
+
+          if (discs.length) {
+            html += `<h2>Discussões</h2>`;
+            discs.forEach((d, i) => {
+              const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
+              html += `<h3>${i + 1}. ${Utils.escapeHtml(d.submitterDisplay || 'Desconhecido')} (${Utils.escapeHtml(fmtDate(d.createdTs))}) [${Utils.escapeHtml(privacy)}]</h3>`;
+              html += `<div>${discHtmlEmbeds[i] || Utils.escapeHtml(d.bodyText || '')}</div>`;
+            });
+          } else {
+            html += `<h2>Discussões</h2><p>(nenhuma discussão)</p>`;
+          }
+
+          // ── Monta versão texto puro (fallback) ──
+          let plain = `# Chamado #${entry.idText || id}\n\n`;
+          plain += `Data de abertura: ${fmtDate(entry.createdTs)}\n`;
+          plain += `Solicitante: ${entry.requestedForName || '—'}\n`;
+          plain += `Local: ${entry.locationName || '—'}\n`;
+          plain += `\n## Descrição\n\n${htmlToPlainText(descHtmlEmbed) || entry.descriptionText || '(sem descrição)'}\n`;
+          if (discs.length) {
+            plain += `\n## Discussões\n`;
+            discs.forEach((d, i) => {
+              const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
+              plain += `\n### ${i + 1}. ${d.submitterDisplay || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
+              plain += `${(d.bodyText || '').trim()}\n`;
+            });
+          } else {
+            plain += `\n## Discussões\n\n(nenhuma discussão)\n`;
+          }
+
+          // ── Copia para clipboard como HTML rico (imagens embutidas) + texto puro ──
+          const htmlBlob = new Blob([html], { type: 'text/html' });
+          const textBlob = new Blob([plain], { type: 'text/plain' });
+          await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })]);
+
+          setStatusMsg('📥 Chamado extraído com imagens e copiado!', '#4ade80');
           const btn = backdrop.querySelector('#smax-resp-extract-btn');
           if (btn) { btn.classList.add('dirty'); setTimeout(() => btn.classList.remove('dirty'), 2000); }
-        }).catch(() => {
-          setStatusMsg('Erro ao copiar para a área de transferência.', '#fca5a5');
-        });
+        } catch (err) {
+          console.warn('[SMAX] Falha na extração rica, tentando texto puro:', err);
+          // Fallback: copia apenas texto se ClipboardItem não funcionar
+          let md = `# Chamado #${entry.idText || id}\n\n`;
+          md += `Data de abertura: ${fmtDate(entry.createdTs)}\n`;
+          md += `Solicitante: ${entry.requestedForName || '—'}\n`;
+          md += `Local: ${entry.locationName || '—'}\n`;
+          md += `\n## Descrição\n\n${(entry.descriptionText || '(sem descrição)').trim()}\n`;
+          const discs2 = (entry.discussions || []).filter(d => !d.systemGenerated);
+          if (discs2.length) {
+            md += `\n## Discussões\n`;
+            discs2.forEach((d, i) => {
+              const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
+              md += `\n### ${i + 1}. ${d.submitterDisplay || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
+              md += `${(d.bodyText || '').trim()}\n`;
+            });
+          }
+          try {
+            await navigator.clipboard.writeText(md);
+            setStatusMsg('📥 Extraído (só texto — imagens falharam).', '#facc15');
+          } catch {
+            setStatusMsg('Erro ao copiar para a área de transferência.', '#fca5a5');
+          }
+        }
       });
       // Assinatura picker
       backdrop.querySelector('#smax-resp-sig-btn')?.addEventListener('click', openSignaturePicker);
