@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.32
+// @version      1.33
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -9403,10 +9403,10 @@
           return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         };
 
-        // Busca imagem e converte para data URI base64
-        const fetchImageAsDataUri = async (src) => {
+        // Busca um blob via URL com autenticação e converte para data URI base64
+        const fetchAsDataUri = async (url) => {
           try {
-            const absUrl = new URL(src, window.location.origin).href;
+            const absUrl = new URL(url, window.location.origin).href;
             const resp = await fetch(absUrl, { credentials: 'include' });
             if (!resp.ok) return null;
             const blob = await resp.blob();
@@ -9420,37 +9420,43 @@
           } catch { return null; }
         };
 
-        // Converte todas as <img> de um HTML para base64 inline
+        // Tenta baixar um attachment record (testa cada downloadCandidate)
+        const fetchAttachmentAsDataUri = async (att) => {
+          const candidates = Array.isArray(att.downloadCandidates) ? att.downloadCandidates : (att.downloadUrl ? [att.downloadUrl] : []);
+          for (const url of candidates) {
+            const dataUri = await fetchAsDataUri(url);
+            if (dataUri) return dataUri;
+          }
+          return null;
+        };
+
+        // Converte todas as <img src> de um HTML para base64 inline
         const embedImagesInHtml = async (html) => {
           if (!html) return '';
           const container = document.createElement('div');
           container.innerHTML = Utils.sanitizeRichText(html);
           const imgs = container.querySelectorAll('img[src]');
-          await Promise.all(Array.from(imgs).map(async (img) => {
-            const dataUri = await fetchImageAsDataUri(img.getAttribute('src'));
-            if (dataUri) {
-              img.setAttribute('src', dataUri);
-            } else {
-              img.remove();
-            }
-          }));
+          if (imgs.length) {
+            await Promise.all(Array.from(imgs).map(async (img) => {
+              const dataUri = await fetchAsDataUri(img.getAttribute('src'));
+              if (dataUri) { img.setAttribute('src', dataUri); } else { img.remove(); }
+            }));
+          }
           return container.innerHTML;
         };
 
-        // Extrai texto puro de HTML (fallback para versão text/plain)
-        const htmlToPlainText = (html) => {
-          if (!html) return '';
-          const tmp = document.createElement('div');
-          tmp.innerHTML = html;
-          return (tmp.textContent || tmp.innerText || '').trim();
-        };
-
         try {
-          // Processa descrição e discussões em paralelo
+          // Processa descrição, discussões e anexos em paralelo
           const descHtmlPromise = embedImagesInHtml(entry.descriptionHtml);
           const discs = (entry.discussions || []).filter(d => !d.systemGenerated);
           const discHtmlPromises = discs.map(d => embedImagesInHtml(d.bodyHtml || d.bodyRaw));
+          const attachPromise = AttachmentService.fetchList(String(id)).catch(() => []);
           const [descHtmlEmbed, ...discHtmlEmbeds] = await Promise.all([descHtmlPromise, ...discHtmlPromises]);
+          const attachments = await attachPromise;
+
+          // Baixa cada anexo de imagem e converte para base64
+          const imageAtts = (attachments || []).filter(a => a && a.isImage);
+          const imageDataUris = await Promise.all(imageAtts.map(a => fetchAttachmentAsDataUri(a)));
 
           // ── Monta versão HTML (com imagens base64 embutidas) ──
           let html = `<h1>Chamado #${Utils.escapeHtml(entry.idText || id)}</h1>`;
@@ -9473,12 +9479,24 @@
             html += `<h2>Discussões</h2><p>(nenhuma discussão)</p>`;
           }
 
+          // Anexos de imagem
+          const validImages = imageAtts.filter((_, i) => imageDataUris[i]);
+          if (validImages.length) {
+            html += `<h2>Anexos (${validImages.length} imagem${validImages.length > 1 ? 'ns' : ''})</h2>`;
+            validImages.forEach((att, i) => {
+              const idx = imageAtts.indexOf(att);
+              html += `<p><b>${Utils.escapeHtml(att.name || 'Imagem')}</b></p>`;
+              html += `<img src="${imageDataUris[idx]}" alt="${Utils.escapeHtml(att.name || 'Anexo')}" style="max-width:800px;">`;
+            });
+          }
+
           // ── Monta versão texto puro (fallback) ──
+          const htmlToText = (h) => { const t = document.createElement('div'); t.innerHTML = h; return (t.textContent || '').trim(); };
           let plain = `# Chamado #${entry.idText || id}\n\n`;
           plain += `Data de abertura: ${fmtDate(entry.createdTs)}\n`;
           plain += `Solicitante: ${entry.requestedForName || '—'}\n`;
           plain += `Local: ${entry.locationName || '—'}\n`;
-          plain += `\n## Descrição\n\n${htmlToPlainText(descHtmlEmbed) || entry.descriptionText || '(sem descrição)'}\n`;
+          plain += `\n## Descrição\n\n${htmlToText(descHtmlEmbed) || entry.descriptionText || '(sem descrição)'}\n`;
           if (discs.length) {
             plain += `\n## Discussões\n`;
             discs.forEach((d, i) => {
@@ -9489,18 +9507,21 @@
           } else {
             plain += `\n## Discussões\n\n(nenhuma discussão)\n`;
           }
+          if (validImages.length) {
+            plain += `\n## Anexos\n\n${validImages.length} imagem(ns) incluída(s) na versão rica (cole em campo que suporte imagens).\n`;
+          }
 
           // ── Copia para clipboard como HTML rico (imagens embutidas) + texto puro ──
           const htmlBlob = new Blob([html], { type: 'text/html' });
           const textBlob = new Blob([plain], { type: 'text/plain' });
           await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })]);
 
-          setStatusMsg('📥 Chamado extraído com imagens e copiado!', '#4ade80');
+          const imgCount = validImages.length;
+          setStatusMsg(`📥 Extraído com ${imgCount} imagem${imgCount !== 1 ? 'ns' : ''}!`, '#4ade80');
           const btn = backdrop.querySelector('#smax-resp-extract-btn');
           if (btn) { btn.classList.add('dirty'); setTimeout(() => btn.classList.remove('dirty'), 2000); }
         } catch (err) {
           console.warn('[SMAX] Falha na extração rica, tentando texto puro:', err);
-          // Fallback: copia apenas texto se ClipboardItem não funcionar
           let md = `# Chamado #${entry.idText || id}\n\n`;
           md += `Data de abertura: ${fmtDate(entry.createdTs)}\n`;
           md += `Solicitante: ${entry.requestedForName || '—'}\n`;
