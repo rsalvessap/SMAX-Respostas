@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.33
+// @version      1.34
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.31';
+  const SMAX_TOOLKIT_VERSION = '1.34';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -6695,29 +6695,59 @@
 
       try {
         const tenantId = ApiClient.getTenantId() || SMAX_TENANT_ID;
-        const url = `/rest/${tenantId}/ems/Request?filter=${encodeURIComponent(filter)}&layout=${encodeURIComponent(layout)}&size=1000&TENANTID=${tenantId}`;
-        console.log('[SMAX ResponseHUD] GET', url);
-        const resp = await fetch(url, { credentials: 'include' });
-        if (!resp.ok) {
-          const errBody = await resp.text().catch(() => '');
-          console.error('[SMAX ResponseHUD] fetchTickets HTTP', resp.status, errBody.slice(0, 500));
-          throw new Error(`HTTP ${resp.status}: ${errBody.slice(0, 200)}`);
-        }
-        const rawText = await resp.text();
-        let data;
-        try { data = JSON.parse(rawText); } catch (pe) {
-          console.error('[SMAX ResponseHUD] JSON parse error:', pe.message, '| body:', rawText.slice(0, 500));
-          throw pe;
-        }
-        const entities = data?.entities || [];
-        if (!entities.length) {
+        const PAGE_SIZE = 1000;
+        const MAX_PAGES = 20;
+
+        const fetchPage = async (skip) => {
+          const url = `/rest/${tenantId}/ems/Request?filter=${encodeURIComponent(filter)}&layout=${encodeURIComponent(layout)}&size=${PAGE_SIZE}&skip=${skip}&TENANTID=${tenantId}`;
+          console.log('[SMAX ResponseHUD] GET', url);
+          const resp = await fetch(url, { credentials: 'include' });
+          if (!resp.ok) {
+            const errBody = await resp.text().catch(() => '');
+            console.error('[SMAX ResponseHUD] fetchTickets HTTP', resp.status, errBody.slice(0, 500));
+            throw new Error(`HTTP ${resp.status}: ${errBody.slice(0, 200)}`);
+          }
+          const rawText = await resp.text();
+          try {
+            return JSON.parse(rawText);
+          } catch (pe) {
+            console.error('[SMAX ResponseHUD] JSON parse error:', pe.message, '| body:', rawText.slice(0, 500));
+            throw pe;
+          }
+        };
+
+        const firstPage = await fetchPage(0);
+        const pagedEntities = [...(firstPage?.entities || [])];
+        if (!pagedEntities.length) {
           // Log diagnóstico completo para identificar mudança de formato da API
           console.warn('[SMAX ResponseHUD] DIAGNÓSTICO entities=0:',
-            '\n  chaves do response:', Object.keys(data || {}),
-            '\n  meta:', JSON.stringify(data?.meta || data?.metadata || {}),
-            '\n  body (500 chars):', rawText.slice(0, 500)
+            '\n  chaves do response:', Object.keys(firstPage || {}),
+            '\n  meta:', JSON.stringify(firstPage?.meta || firstPage?.metadata || {})
           );
         }
+        // O SMAX limita a resposta ao `size` pedido e não sinaliza o corte a não ser
+        // pelo meta.total_count. Sem paginar, chamados além do primeiro lote somem
+        // da lista silenciosamente.
+        const totalCount = Number(firstPage?.meta?.total_count ?? firstPage?.meta?.totalCount) || pagedEntities.length;
+        if (totalCount > pagedEntities.length) {
+          setStatusMsg(`Buscando chamados... (${pagedEntities.length}/${totalCount})`, '#93c5fd');
+          const skips = [];
+          for (let skip = PAGE_SIZE; skip < totalCount && skips.length < MAX_PAGES; skip += PAGE_SIZE) skips.push(skip);
+          const results = await Promise.allSettled(skips.map(s => fetchPage(s)));
+          for (const r of results) {
+            if (r.status === 'fulfilled') pagedEntities.push(...(r.value?.entities || []));
+            else console.warn('[SMAX ResponseHUD] página falhou:', r.reason);
+          }
+          console.log('[SMAX ResponseHUD] paginação:', pagedEntities.length, 'de', totalCount, 'em', skips.length + 1, 'páginas');
+        }
+        // Sem `order` explícito o SMAX pode repetir registros entre páginas — dedupe por Id.
+        const seenEntityIds = new Set();
+        const entities = pagedEntities.filter((e) => {
+          const eid = String(e?.properties?.Id || '').replace(/^IMRfc:/, '');
+          if (!eid || seenEntityIds.has(eid)) return false;
+          seenEntityIds.add(eid);
+          return true;
+        });
 
         allFetchedEntries = entities.map(e => {
           const p = e.properties || {};
