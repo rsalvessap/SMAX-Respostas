@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.36
+// @version      1.37
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.36';
+  const SMAX_TOOLKIT_VERSION = '1.37';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -7542,10 +7542,13 @@
       const followerWillChange = !!(pending.followers?.length);
       const ackWillSend = !!pending.ackMessage;
       const escalateWillSend = !!pending.escalate;
+      // O texto de encaminhamento é postado mesmo que a GSE escolhida seja a atual —
+      // caso contrário ele seria descartado em silêncio.
+      const fwdWillSend = !!(pending.forwarding?.text);
 
       return { hasSolution, curGseId, gseWillChange, curAssigneeId, assigneeWillChange,
-               statusWillChange, statusSCCDWillChange, followerWillChange, ackWillSend, escalateWillSend, effectivePendingStatus, effectivePendingSccd,
-               willAct: hasSolution || gseWillChange || assigneeWillChange || statusWillChange || statusSCCDWillChange || followerWillChange || ackWillSend || escalateWillSend };
+               statusWillChange, statusSCCDWillChange, followerWillChange, ackWillSend, escalateWillSend, fwdWillSend, effectivePendingStatus, effectivePendingSccd,
+               willAct: hasSolution || gseWillChange || assigneeWillChange || statusWillChange || statusSCCDWillChange || followerWillChange || ackWillSend || escalateWillSend || fwdWillSend };
     };
 
     const commitTicket = async (id, solutionRaw, completionCode) => {
@@ -7560,6 +7563,7 @@
       // o servidor re-designe automaticamente ao processar ambos na mesma operação.
       const fwdHtml = pending.forwarding?.text || '';
       const clearAssignee = gseWillChange && !!fwdHtml;
+      let fwdPosted = false, fwdFailed = false;
 
       // Escalação é transição de fase — NUNCA reenviar a Solution existente junto,
       // pois isso faria o chamado voltar para aceite do usuário indevidamente.
@@ -7632,12 +7636,14 @@
             } catch (ce) { console.warn('[SMAX ResponseHUD] clearAssignee HTTP error:', ce); }
           }
           // Postar texto de encaminhamento como discussão interna
-          if (gseWillChange && fwdHtml) {
+          if (fwdHtml) {
             const discRes = await Api.postDiscussion(id, { bodyHtml: fwdHtml, privacyRaw: 'INTERNAL' });
             const discOutcome = Api.summarizeBulkOutcome(discRes);
             if (discOutcome?.ok) {
+              fwdPosted = true;
               console.info('[SMAX ResponseHUD] Discussão de encaminhamento postada:', id);
             } else {
+              fwdFailed = true;
               console.warn('[SMAX ResponseHUD] Falha ao postar discussão de encaminhamento:', id, discOutcome?.messages);
             }
           }
@@ -7688,10 +7694,10 @@
           usedScript:       false,
           success,
         });
-        return outcome;
+        return Object.assign({}, outcome, { fwdPosted, fwdFailed });
       } catch (e) {
         ActivityLog.log({ ticketId: id, ticketSubject: DataRepository.triageCache.get(id)?.subjectText || '', answered: sendSolution, success: false });
-        return { ok: false, msg: e.message };
+        return { ok: false, msg: e.message, fwdPosted, fwdFailed: !!fwdHtml && !fwdPosted };
       }
     };
 
@@ -7701,10 +7707,12 @@
       if (sendBtn)  sendBtn.disabled  = true;
       if (batchBtn) batchBtn.disabled = true;
 
-      let ok = 0, fail = 0, skipped = 0;
+      let ok = 0, fail = 0, skipped = 0, fwdOk = 0, fwdErr = 0;
       for (let i = 0; i < targets.length; i++) {
         setStatusMsg(`Enviando ${i + 1}/${targets.length}...`, '#93c5fd');
         const r = await commitTicket(targets[i], solutionRaw, completionCode);
+        if (r?.fwdPosted) fwdOk++;
+        if (r?.fwdFailed) fwdErr++;
         if (r?.skipped) skipped++;
         else if (r?.ok !== false) ok++;
         else fail++;
@@ -7725,8 +7733,12 @@
           if (entry) renderTicketDetail(entry);
         }
         const skipNote = skipped > 0 ? ` (${skipped} ignorado${skipped !== 1 ? 's' : ''} — sem alterações)` : '';
-        const fwdNote = fwdText ? ' | 📤 Encaminhamento postado como discussão.' : '';
-        setStatusMsg(`✓ ${ok} chamado(s) atualizado(s).${skipNote}${fwdNote}`, '#4ade80');
+        // Só anunciar o encaminhamento se a discussão realmente foi aceita pelo SMAX.
+        const fwdNote = !fwdText ? ''
+          : fwdErr > 0 ? ` | ⚠️ Encaminhamento NÃO postado em ${fwdErr} chamado(s) — veja o console.`
+          : fwdOk > 0  ? ' | 📤 Encaminhamento postado como discussão.'
+          : '';
+        setStatusMsg(`✓ ${ok} chamado(s) atualizado(s).${skipNote}${fwdNote}`, fwdErr > 0 ? '#facc15' : '#4ade80');
       } else if (fail === 0 && ok === 0) {
         setStatusMsg('Nenhum chamado com alterações para enviar.', '#fca5a5');
       } else {
