@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.34
+// @version      1.35
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.34';
+  const SMAX_TOOLKIT_VERSION = '1.35';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -7517,7 +7517,11 @@
       const fetched = allFetchedEntries.find(e => e.id === id) || {};
       const cache   = DataRepository.triageCache.get(id) || {};
 
-      const hasSolution   = !!htmlToText(solutionRaw);
+      // A solução só é enviada quando HÁ texto E um código de conclusão selecionado —
+      // mesmo critério do botão (updateSendButton). Chamados rejeitados voltam com o
+      // editor pré-preenchido; sem esta checagem qualquer ação (GSE, seguidor, status)
+      // reenviaria a resposta ao usuário final com um CompletionCode fabricado.
+      const hasSolution   = !!htmlToText(solutionRaw) && !!getSelectedCompletionCode();
       const curGseId      = String(fetched.gse || cache.assignmentGroupId || '');
       const gseWillChange = !!(pending.gse?.id) && String(pending.gse.id) !== curGseId;
       const curAssigneeId       = String(fetched.assignee || cache.expertAssigneeId || '');
@@ -7559,7 +7563,7 @@
 
       // Escalação é transição de fase — NUNCA reenviar a Solution existente junto,
       // pois isso faria o chamado voltar para aceite do usuário indevidamente.
-      const sendSolution = hasSolution && !escalateWillSend;
+      const sendSolution = hasSolution && !escalateWillSend && !!completionCode;
 
       // Determinar se há alterações de propriedades (excluindo seguidor, que é relationship)
       const hasPropertyChanges = sendSolution || gseWillChange || assigneeWillChange || clearAssignee || statusWillChange || statusSCCDWillChange || escalateWillSend;
@@ -7567,7 +7571,7 @@
       const props = { Id: id };
       if (sendSolution) {
         props.Solution = solutionRaw;
-        props.CompletionCode = completionCode || 'CompletionCodeFulfilled';
+        props.CompletionCode = completionCode;
       }
       if (gseWillChange) props.ExpertGroup = pending.gse.id;
       // Quando clearAssignee, NÃO incluir ExpertAssignee no mesmo UPDATE que muda ExpertGroup.
@@ -7786,7 +7790,8 @@
 
       const overlay = document.createElement('div');
       overlay.id = 'smax-batch-confirm-overlay';
-      const solutionPlain = htmlToText(solutionRaw);
+      // Sem código de conclusão a solução NÃO é enviada — não anunciar no resumo.
+      const solutionPlain = getSelectedCompletionCode() ? htmlToText(solutionRaw) : '';
       const solutionPreview = solutionPlain.slice(0, 90) + (solutionPlain.length > 90 ? '…' : '');
       overlay.innerHTML = `
         <div id="smax-batch-confirm-box">
