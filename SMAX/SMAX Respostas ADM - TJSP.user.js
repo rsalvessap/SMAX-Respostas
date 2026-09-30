@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SMAX Respostas ADM - TJSP
 // @namespace    https://github.com/rsalvessap/SMAX-Respostas
-// @version      1.37
+// @version      1.38
 // @description  [ADM] Módulo de respostas para o SMAX TJSP — versão de desenvolvimento
 // @author       rsalvessap
 // @match        https://suporte.tjsp.jus.br/saw/*
@@ -34,7 +34,7 @@
   const SMAX_SB_URL = 'https://rlcbmrjkojopipiwpktf.supabase.co';
   const SMAX_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsY2Jtcmprb2pvcGlwaXdwa3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI0MTksImV4cCI6MjA5NDMwODQxOX0.Ha4xRbFvbgb2yO64ga3dV8KrNGRgbV7zWFXc5bYHdeQ';
 
-  const SMAX_TOOLKIT_VERSION = '1.37';
+  const SMAX_TOOLKIT_VERSION = '1.38';
   const SMAX_TENANT_ID = '213963628';
   console.log('%c[SMAX Respostas ADM] v' + SMAX_TOOLKIT_VERSION + ' carregado', 'color:#f59e0b;font-weight:bold;font-size:13px;');
 
@@ -9485,33 +9485,77 @@
           return null;
         };
 
-        // Converte todas as <img src> de um HTML para base64 inline
+        // Converte as <img src> de um HTML para base64 inline; devolve o container
         const embedImagesInHtml = async (html) => {
-          if (!html) return '';
           const container = document.createElement('div');
+          if (!html) return container;
           container.innerHTML = Utils.sanitizeRichText(html);
           const imgs = container.querySelectorAll('img[src]');
           if (imgs.length) {
             await Promise.all(Array.from(imgs).map(async (img) => {
               const dataUri = await fetchAsDataUri(img.getAttribute('src'));
-              if (dataUri) { img.setAttribute('src', dataUri); } else { img.remove(); }
+              if (dataUri) { img.setAttribute('src', dataUri); img.setAttribute('data-smax-img', '1'); }
+              else { img.remove(); }
             }));
           }
+          return container;
+        };
+
+        // Numera as imagens sobreviventes e insere o marcador [IMAGEM N] antes de cada uma.
+        // O ChatGPT descarta imagens vindas do clipboard HTML, então o marcador é o que
+        // correlaciona o texto colado com os arquivos baixados.
+        const collected = [];
+        const numberImages = (container) => {
+          container.querySelectorAll('img[data-smax-img]').forEach((img) => {
+            collected.push(img.getAttribute('src'));
+            img.removeAttribute('data-smax-img');
+            img.insertAdjacentText('beforebegin', `[IMAGEM ${collected.length}] `);
+          });
           return container.innerHTML;
+        };
+
+        const plurImg = (n) => (n === 1 ? 'imagem' : 'imagens');
+
+        // Baixa as imagens coletadas como arquivos numerados, para arrastar no chat
+        const downloadCollected = async (fileBase) => {
+          for (let i = 0; i < collected.length; i++) {
+            try {
+              const blob = await (await fetch(collected[i])).blob();
+              const ext = ((blob.type.split('/')[1] || 'png').split('+')[0]).replace('jpeg', 'jpg');
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `chamado-${fileBase}-img${i + 1}.${ext}`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              setTimeout(() => URL.revokeObjectURL(url), 10000);
+              await new Promise(r => setTimeout(r, 350));
+            } catch (e) {
+              console.warn('[SMAX] Falha ao baixar imagem', i + 1, e);
+            }
+          }
         };
 
         try {
           // Processa descrição, discussões e anexos em paralelo
-          const descHtmlPromise = embedImagesInHtml(entry.descriptionHtml);
-          const discs = (entry.discussions || []).filter(d => !d.systemGenerated);
-          const discHtmlPromises = discs.map(d => embedImagesInHtml(d.bodyHtml || d.bodyRaw));
+          const descPromise = embedImagesInHtml(entry.descriptionHtml);
+          const discs = entry.discussions || [];
+          const discPromises = discs.map(d => embedImagesInHtml(d.bodyHtml || d.bodyRaw));
           const attachPromise = AttachmentService.fetchList(String(id)).catch(() => []);
-          const [descHtmlEmbed, ...discHtmlEmbeds] = await Promise.all([descHtmlPromise, ...discHtmlPromises]);
+          const [descContainer, ...discContainers] = await Promise.all([descPromise, ...discPromises]);
           const attachments = await attachPromise;
+
+          // Numeração sequencial das imagens: descrição → discussões → anexos
+          const descHtmlEmbed = numberImages(descContainer);
+          const discHtmlEmbeds = discContainers.map(numberImages);
 
           // Baixa cada anexo de imagem e converte para base64
           const imageAtts = (attachments || []).filter(a => a && a.isImage);
           const imageDataUris = await Promise.all(imageAtts.map(a => fetchAttachmentAsDataUri(a)));
+          const validImages = imageAtts.map((att, i) => ({ att, dataUri: imageDataUris[i] })).filter(x => x.dataUri);
+          const attachStartIdx = collected.length;
+          validImages.forEach(x => collected.push(x.dataUri));
 
           // ── Monta versão HTML (com imagens base64 embutidas) ──
           let html = `<h1>Chamado #${Utils.escapeHtml(entry.idText || id)}</h1>`;
@@ -9527,7 +9571,7 @@
             html += `<h2>Discussões</h2>`;
             discs.forEach((d, i) => {
               const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
-              html += `<h3>${i + 1}. ${Utils.escapeHtml(d.submitterDisplay || 'Desconhecido')} (${Utils.escapeHtml(fmtDate(d.createdTs))}) [${Utils.escapeHtml(privacy)}]</h3>`;
+              html += `<h3>${i + 1}. ${Utils.escapeHtml(resolveSubmitterName(d) || 'Desconhecido')} (${Utils.escapeHtml(fmtDate(d.createdTs))}) [${Utils.escapeHtml(privacy)}]</h3>`;
               html += `<div>${discHtmlEmbeds[i] || Utils.escapeHtml(d.bodyText || '')}</div>`;
             });
           } else {
@@ -9535,13 +9579,11 @@
           }
 
           // Anexos de imagem
-          const validImages = imageAtts.filter((_, i) => imageDataUris[i]);
           if (validImages.length) {
-            html += `<h2>Anexos (${validImages.length} imagem${validImages.length > 1 ? 'ns' : ''})</h2>`;
-            validImages.forEach((att, i) => {
-              const idx = imageAtts.indexOf(att);
-              html += `<p><b>${Utils.escapeHtml(att.name || 'Imagem')}</b></p>`;
-              html += `<img src="${imageDataUris[idx]}" alt="${Utils.escapeHtml(att.name || 'Anexo')}" style="max-width:800px;">`;
+            html += `<h2>Anexos (${validImages.length} ${plurImg(validImages.length)})</h2>`;
+            validImages.forEach((x, i) => {
+              html += `<p><b>[IMAGEM ${attachStartIdx + i + 1}] ${Utils.escapeHtml(x.att.name || 'Imagem')}</b></p>`;
+              html += `<img src="${x.dataUri}" alt="${Utils.escapeHtml(x.att.name || 'Anexo')}" style="max-width:800px;">`;
             });
           }
 
@@ -9556,14 +9598,21 @@
             plain += `\n## Discussões\n`;
             discs.forEach((d, i) => {
               const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
-              plain += `\n### ${i + 1}. ${d.submitterDisplay || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
-              plain += `${(d.bodyText || '').trim()}\n`;
+              plain += `\n### ${i + 1}. ${resolveSubmitterName(d) || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
+              plain += `${htmlToText(discHtmlEmbeds[i]) || (d.bodyText || '').trim()}\n`;
             });
           } else {
             plain += `\n## Discussões\n\n(nenhuma discussão)\n`;
           }
           if (validImages.length) {
-            plain += `\n## Anexos\n\n${validImages.length} imagem(ns) incluída(s) na versão rica (cole em campo que suporte imagens).\n`;
+            plain += `\n## Anexos\n`;
+            validImages.forEach((x, i) => {
+              plain += `\n[IMAGEM ${attachStartIdx + i + 1}] ${x.att.name || 'Imagem'}\n`;
+            });
+          }
+          const fileBase = String(entry.idText || id).replace(/[^\w-]/g, '') || String(id);
+          if (collected.length) {
+            plain += `\n---\nAs ${collected.length} ${plurImg(collected.length)} referenciadas como [IMAGEM N] foram baixadas como chamado-${fileBase}-imgN — anexe ao chat.\n`;
           }
 
           // ── Copia para clipboard como HTML rico (imagens embutidas) + texto puro ──
@@ -9571,8 +9620,14 @@
           const textBlob = new Blob([plain], { type: 'text/plain' });
           await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })]);
 
-          const imgCount = validImages.length;
-          setStatusMsg(`📥 Extraído com ${imgCount} imagem${imgCount !== 1 ? 'ns' : ''}!`, '#4ade80');
+          const imgCount = collected.length;
+          if (imgCount) {
+            setStatusMsg(`📥 Texto copiado — baixando ${imgCount} ${plurImg(imgCount)}…`, '#93c5fd');
+            await downloadCollected(fileBase);
+            setStatusMsg(`📥 Extraído! ${imgCount} ${plurImg(imgCount)} baixada${imgCount === 1 ? '' : 's'} — anexe ao chat.`, '#4ade80');
+          } else {
+            setStatusMsg('📥 Extraído (sem imagens).', '#4ade80');
+          }
           const btn = backdrop.querySelector('#smax-resp-extract-btn');
           if (btn) { btn.classList.add('dirty'); setTimeout(() => btn.classList.remove('dirty'), 2000); }
         } catch (err) {
@@ -9582,12 +9637,12 @@
           md += `Solicitante: ${entry.requestedForName || '—'}\n`;
           md += `Local: ${entry.locationName || '—'}\n`;
           md += `\n## Descrição\n\n${(entry.descriptionText || '(sem descrição)').trim()}\n`;
-          const discs2 = (entry.discussions || []).filter(d => !d.systemGenerated);
+          const discs2 = entry.discussions || [];
           if (discs2.length) {
             md += `\n## Discussões\n`;
             discs2.forEach((d, i) => {
               const privacy = d.privacyLabel || (d.privacyCode === 'INTERNAL' ? 'INTERNO' : 'PÚBLICO');
-              md += `\n### ${i + 1}. ${d.submitterDisplay || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
+              md += `\n### ${i + 1}. ${resolveSubmitterName(d) || 'Desconhecido'} (${fmtDate(d.createdTs)}) [${privacy}]\n\n`;
               md += `${(d.bodyText || '').trim()}\n`;
             });
           }
